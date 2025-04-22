@@ -57,7 +57,7 @@ funcLogic_doubleChar(char1, char2 := "") {
     }
     charLen := StrLen(char2)
     selText := getSelText()
-    showToolTips("替换结果：" . char1 . selText . char2)
+    ; showToolTips("替换结果：" . char1 . selText . char2)
     ClipboardOld := ClipboardAll()
     if (selText) {
         A_Clipboard := char1 . selText . char2
@@ -66,7 +66,36 @@ funcLogic_doubleChar(char1, char2 := "") {
     else {
         A_Clipboard := char1 . char2
         Send('^v')
-        ; Send(Format("{Left {:}}", charLen))
+    }
+    Sleep(50)
+    A_Clipboard := ClipboardOld
+    return
+}
+
+; 选中文字切换为小写
+funcLogic_switchSelLowerCase() {
+    ClipboardOld := ClipboardAll()
+    resText := StrLower(getSelText())
+    if (resText) {
+        A_Clipboard := resText
+        SendInput('^v')
+    } else {
+        showToolTips('没有选中文本')
+    }
+    Sleep(50)
+    A_Clipboard := ClipboardOld
+    return
+}
+
+; 选中文字切换为大写
+funcLogic_switchSelUpperCase() {
+    ClipboardOld := ClipboardAll()
+    resText := StrUpper(getSelText())
+    if (resText) {
+        A_Clipboard := resText
+        SendInput('^v')
+    } else {
+        showToolTips('没有选中文本')
     }
     Sleep(50)
     A_Clipboard := ClipboardOld

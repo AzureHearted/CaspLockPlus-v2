@@ -44,6 +44,8 @@ uiSets := {
 
         }
         keyFunc_g() {
+            ; 菜单键
+            SendInput('{AppsKey}')
         }
         keyFunc_h() {
             ; ⬅️跳词
@@ -366,8 +368,12 @@ uiSets := {
 
         }
         keyFunc_alt_m() {
+            ; 将选中的英文转为小写
+            funcLogic_switchSelLowerCase()
         }
         keyFunc_alt_n() {
+            ; 将选中的英文转为大写
+            funcLogic_switchSelUpperCase()
         }
         keyFunc_alt_o() {
             ; 当前光标选至行末
@@ -394,6 +400,8 @@ uiSets := {
         keyFunc_alt_v() {
         }
         keyFunc_alt_w() {
+            ; Alt + F4 关闭软件
+            SendInput('!{F4}')
         }
         keyFunc_alt_x() {
         }
@@ -595,6 +603,8 @@ uiSets := {
     ; =========   A ~ Z ... 开始
     {
         keyFunc_shift_a() {
+            ; 删除光标右边至行首
+            SendInput('+{Home}{Backspace}')
         }
         keyFunc_shift_b() {
         }
@@ -603,6 +613,8 @@ uiSets := {
         keyFunc_shift_d() {
         }
         keyFunc_shift_e() {
+            ; Ctrl + Win + Right 切换下一个虚拟窗口
+            SendInput('^#{Right}')
         }
         keyFunc_shift_f() {
         }
@@ -613,9 +625,10 @@ uiSets := {
         keyFunc_shift_i() {
             ; 向⬆️翻页
             SendInput('{PgUp}')
-
         }
         keyFunc_shift_j() {
+            ; Ctal + Tab切换标签页
+            SendInput('^{Tab}')
         }
         keyFunc_shift_k() {
             ; 向⬇️翻页
@@ -623,6 +636,8 @@ uiSets := {
 
         }
         keyFunc_shift_l() {
+            ; Ctal + Shift + Tab切换标签页
+            SendInput('^+{Tab}')
         }
         keyFunc_shift_m() {
         }
@@ -633,10 +648,16 @@ uiSets := {
         keyFunc_shift_p() {
         }
         keyFunc_shift_q() {
+            ; Ctrl + Win + left 切换上一个虚拟窗口
+            SendInput('^#{Left}')
         }
         keyFunc_shift_r() {
+            ; Ctrl + Win + D 创建虚拟窗口
+            SendInput('^#d')
         }
         keyFunc_shift_s() {
+            ; 删除光标右边至行末
+            SendInput('+{End}{Backspace}')
         }
         keyFunc_shift_t() {
         }
@@ -645,6 +666,8 @@ uiSets := {
         keyFunc_shift_v() {
         }
         keyFunc_shift_w() {
+            ; Ctrl + Win + F4 关闭当前虚拟窗口
+            SendInput('^#{F4}')
         }
         keyFunc_shift_x() {
         }
