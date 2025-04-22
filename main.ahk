@@ -1,12 +1,12 @@
 #Requires AutoHotkey v2.0
 
-#Include lib\lib_init.ahk
+#Include <lib_init>
 
-#Include lib\lib_functions.ahk
-#Include lib\lib_keysFunLogic.ahk
-#Include lib\lib_bindingWindow.ahk
-#Include lib\lib_keysMap.ahk
-#Include lib\lib_keysFunction.ahk
+#Include <lib_functions>
+#Include <lib_keysFunLogic>
+#Include <lib_bindingWindow>
+#Include <lib_keysMap>
+#Include <lib_keysFunction>
 #Include gui\ui_setting.ahk
 #Include gui\ui_webview.ahk
 

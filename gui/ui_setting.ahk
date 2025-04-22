@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
-#Include WebView2/WebView2.ahk
-#Include ../lib/lib_functions.ahk
+#Include <WebView2/WebView2>
+#Include <lib_functions>
 
 class UISetting {
     gui := Gui('-DPIScale AlwaysOnTop', '用户设置')

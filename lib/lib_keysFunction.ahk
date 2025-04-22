@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
-#Include lib_functions.ahk
-#Include lib_keysFunLogic.ahk
-#Include lib_bindingWindow.ahk
+#Include <lib_functions>
+#Include <lib_keysFunLogic>
+#Include <lib_bindingWindow>
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
 #Include ../custom/custom_keysSet.ahk
@@ -273,7 +273,7 @@ uiSets := {
 
         ; 逗号( , )
         keyFunc_comma() {
-
+            funcLogic_doubleChar('<', '>')
         }
 
         ; 句号( 。 )
@@ -542,7 +542,7 @@ uiSets := {
 
         ; 逗号( , )
         keyFunc_alt_comma() {
-
+            funcLogic_doubleChar('《', '》')
         }
 
         ; 句号( 。 )

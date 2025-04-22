@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
 
-#Include lib_setting.ahk
+#Include <lib_setting>
 
 /**
  * 显示ToolTips消息

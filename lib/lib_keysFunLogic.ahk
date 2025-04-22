@@ -26,26 +26,24 @@ funcLogic_deleteLine() {
 
 ; 复制当前行到下一行
 funcLogic_copyLineDown() {
+    showToolTips('复制当前行到下一行')
     tmpClipboard := ClipboardAll()
     A_Clipboard := ""
     SendInput('{home}+{End}^c')
-    ClipWait(0.05)
+    ClipWait(0.05, 0)
     SendInput('{end}{enter}^v')
     Sleep(50)
     A_Clipboard := tmpClipboard
     return
 }
 
-; handle(fun,){
-
-; }
-
 ; 复制当前行到上一行
 funcLogic_CopyLineUp() {
+    showToolTips('复制当前行到上一行')
     tmpClipboard := ClipboardAll()
     A_Clipboard := ""
     SendInput('{Home}+{End}^c')
-    ClipWait(0.05)
+    ClipWait(0.05, 0)
     SendInput('{up}{end}{enter}^v')
     Sleep(50)
     A_Clipboard := tmpClipboard

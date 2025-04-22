@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-#Include WebView2/WebView2.ahk
+#Include <WebView2/WebView2>
 
 class UIWebView {
     gui := Gui('-DPIScale', '浏览器')
@@ -18,9 +18,7 @@ class UIWebView {
         this.gui.OnEvent('Close', (*) => (this.open := false, wvc := wv := 0))
         wvc := WebView2.CreateControllerAsync(this.gui.Hwnd).await2()
         wv := wvc.CoreWebView2
-        wv.Navigate('file:\\\C:\Users\Administrator\Desktop\AHK Code\CaspLockPlus AHK v2 版开发')
-        wv.AddHostObjectToScript('ahk', { str: 'str from ahk', func: MsgBox })
-        ; wv.OpenDevToolsWindow()
+        wv.Navigate('http://localhost:9999/')
 
     }
 }
