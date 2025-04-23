@@ -17,6 +17,7 @@
       "name": "v2版本调试",
       "program": "${workspaceFolder}/main.ahk",
       "stopOnEntry": true
-    }
+    },
+    
   ]
 }

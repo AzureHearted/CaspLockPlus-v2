@@ -1,8 +1,5 @@
 #Requires AutoHotkey v2.0
 
-
-#Include <lib_init>
-
 #Include <lib_functions>
 #Include <lib_keysFunLogic>
 #Include <lib_bindingWindow>
@@ -10,7 +7,6 @@
 #Include <lib_keysFunction>
 #Include gui\ui_setting.ahk
 #Include gui\ui_webview.ahk
-
 
 ; 编译前必需开启这段代码
 if (!A_IsAdmin) {
@@ -26,9 +22,6 @@ if (!A_IsAdmin) {
     }
 }
 
-; 初始脚本
-; initAll()
-
 /** 脚本图标 */
 CapsLockPlusIcon := './res/CapsLockPlusIcon.ico'
 if FileExist(CapsLockPlusIcon) {
@@ -40,9 +33,40 @@ if FileExist(CapsLockPlusIcon) {
 ; CapsLock状态
 CapsLockOpen := GetKeyState('CapsLock', 'T') ; 记录初始CapsLock按键状态
 
+#Include gui\ui_tips.ahk
+ui_Tips := UITips('test')
+
 ; 屏蔽CapsLock原始事件
+CapsLockHold := false
+
+
 CapsLock:: {
+    ; global ui_Tips, CapsLockHold
+    ; if (CapsLockHold)
+    ;     return
+    ; CapsLockHold := true
+    ; holdCapsLock()
 }
+
+holdCapsLock(time := 1000) {
+    global ui_Tips, CapsLockHold
+    OutputDebug('开始计时')
+    SetTimer(handle, -time)
+
+    handle() {
+        if (GetKeyState('CapsLock', 'P'))
+            ; 如果⌛️计时器结束时候还检测到
+            OutputDebug('识别到按住CapsLock')
+        ui_Tips.Show()
+        KeyWait('CapsLock')
+        CapsLockHold := false
+        ui_Tips.Close()
+    }
+}
+
+; CapsLock Up:: {
+;     ui_Tips.Close()
+; }
 
 ; 通过 Shift + CapsLock 触发切换CapsLock
 +CapsLock:: {
@@ -53,17 +77,17 @@ CapsLock:: {
  * CapsLock 开关切换
  */
 funcLogic_capsLockOpen() {
-    global CapslockOpen
-    CapslockOpen := !CapslockOpen
+    global CapsLockOpen
+    CapsLockOpen := !CapsLockOpen
     SetCapsLockState(CapsLockOpen)
     showToolTips("CapsLock键(已" (CapsLockOpen ? '开启' : '关闭') ")")
     return
 }
 
-/** 导入用户自定义按键设置(位置尽量考前) */
+/** 导入用户自定义按键设置(位置尽量靠前) */
 #Include user_keysSet.ahk
 
-/** CaspLock 热键 */
+/** CapsLock 热键 */
 #HotIf GetKeyState('CapsLock', 'P')
 
 /** 当按下CapsLock键时防止按下alt键 */
@@ -142,7 +166,7 @@ Tab:: %keysMap['caps_tab']%()
 ]:: %keysMap['caps_rightSquareBracket']%()
 \:: %keysMap['caps_backslash']%()
 `;:: %keysMap['caps_semicolon']%()
-":: %keysMap['caps_quote']%()
+':: %keysMap['caps_quote']%()
 Enter:: %keysMap['caps_enter']%()
 ,:: %keysMap['caps_comma']%()
 .:: %keysMap['caps_dot']%()
@@ -224,7 +248,7 @@ $!z::
 !]:: %keysMap['caps_alt_rightSquareBracket']%()
 !\:: %keysMap['caps_alt_backslash']%()
 !`;:: %keysMap['caps_alt_semicolon']%()
-!":: %keysMap['caps_alt_quote']%()
+!':: %keysMap['caps_alt_quote']%()
 !Enter:: %keysMap['caps_alt_enter']%()
 !,:: %keysMap['caps_alt_comma']%()
 !.:: %keysMap['caps_alt_dot']%()
@@ -306,7 +330,7 @@ $!z::
 +]:: %keysMap['caps_shift_rightSquareBracket']%()
 +\:: %keysMap['caps_shift_backslash']%()
 +`;:: %keysMap['caps_shift_semicolon']%()
-+":: %keysMap['caps_shift_quote']%()
++':: %keysMap['caps_shift_quote']%()
 +Enter:: %keysMap['caps_shift_enter']%()
 +,:: %keysMap['caps_shift_comma']%()
 +.:: %keysMap['caps_shift_dot']%()
@@ -389,7 +413,7 @@ $!z::
 #]:: %keysMap['caps_win_rightSquareBracket']%()
 #\:: %keysMap['caps_win_backslash']%()
 #`;:: %keysMap['caps_win_semicolon']%()
-#":: %keysMap['caps_win_quote']%()
+#':: %keysMap['caps_win_quote']%()
 #Enter:: %keysMap['caps_win_enter']%()
 #,:: %keysMap['caps_win_comma']%()
 #.:: %keysMap['caps_win_dot']%()

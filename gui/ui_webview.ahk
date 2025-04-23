@@ -3,6 +3,7 @@
 
 class UIWebView {
     gui := Gui('-DPIScale', '浏览器')
+    ; 窗口显示标识符
     open := false
     ; 构造函数
     __New() {

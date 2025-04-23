@@ -5,5 +5,9 @@
     "interpreterPath": "c:\\Program Files\\AutoHotkey\\v2\\AutoHotkey.exe",
     "maxScanDepth": 2,
     "templateSnippetName": "AhkTemplateV2"
-  }
+  },
+  "cSpell.words": [
+    "backquote",
+    "runaction"
+  ]
 }

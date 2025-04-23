@@ -28,7 +28,12 @@ uiSets := {
         keyFunc_c() {
             ; 复制
             SendInput('^c')
-
+            ; 监听剪贴板，进行剪贴板显示
+            OnClipboardChange(handle)
+            handle(*) {
+                showToolTips(A_Clipboard)
+                OnClipboardChange(handle, 0)
+            }
         }
         keyFunc_d() {
             ; 删除当前行
@@ -161,9 +166,8 @@ uiSets := {
         keyFunc_f10() {
             /** WebView2浏览器 */
             ; showToolTips('当前热键' . A_ThisHotkey)
-            global uiSets
-            uiSets.webview.Show()
-
+            ; global uiSets
+            ; uiSets.webview.Show()
         }
         keyFunc_f11() {
 
@@ -172,7 +176,6 @@ uiSets := {
             /** 设置窗口 */
             global uiSets
             uiSets.setting.Show()
-
         }
     }
 
@@ -262,9 +265,10 @@ uiSets := {
             SendInput('^{Right}')
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_quote() {
-
+            ; 用 '' 包裹选中内容
+            funcLogic_doubleChar("'")
         }
 
         ; ( Enter )
@@ -290,7 +294,8 @@ uiSets := {
 
         ; 空格( Space )
         keyFunc_space() {
-
+            ; 输入 Tab
+            SendInput('{Tab}')
         }
     }
 
@@ -539,9 +544,10 @@ uiSets := {
 
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_alt_quote() {
-
+            ; 用 "" 包裹选中内容
+            funcLogic_doubleChar("`"")
         }
 
         ; ( Enter )
@@ -632,7 +638,7 @@ uiSets := {
             SendInput('{PgUp}')
         }
         keyFunc_shift_j() {
-            ; Ctal + Tab切换标签页
+            ; Ctrl + Tab切换标签页
             SendInput('^{Tab}')
         }
         keyFunc_shift_k() {
@@ -641,7 +647,7 @@ uiSets := {
 
         }
         keyFunc_shift_l() {
-            ; Ctal + Shift + Tab切换标签页
+            ; Ctrl + Shift + Tab切换标签页
             SendInput('^+{Tab}')
         }
         keyFunc_shift_m() {
@@ -807,7 +813,7 @@ uiSets := {
 
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_shift_quote() {
 
         }
@@ -1018,7 +1024,7 @@ uiSets := {
         keyFunc_ctrl_semicolon() {
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_ctrl_quote() {
         }
 
@@ -1246,7 +1252,7 @@ uiSets := {
 
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_win_quote() {
 
         }

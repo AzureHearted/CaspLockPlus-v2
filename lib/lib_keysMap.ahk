@@ -94,7 +94,7 @@ keysMap := Map()
         ; 分号( ; )
         keysMap['caps_semicolon'] := "keyFunc_semicolon"
 
-        ; 双引号( "" )
+        ; 单引号('')
         keysMap['caps_quote'] := "keyFunc_quote"
 
         ; ( Enter )
@@ -223,7 +223,7 @@ keysMap := Map()
         ; 分号( ; )
         keysMap['caps_alt_semicolon'] := "keyFunc_alt_semicolon"
 
-        ; 双引号( "" )
+        ; 单引号('')
         keysMap['caps_alt_quote'] := "keyFunc_alt_quote"
 
         ; ( Enter )
@@ -352,7 +352,7 @@ keysMap := Map()
         ; 分号( ; )
         keysMap['caps_shift_semicolon'] := "keyFunc_shift_semicolon"
 
-        ; 双引号( "" )
+        ; 单引号('')
         keysMap['caps_shift_quote'] := "keyFunc_shift_quote"
 
         ; ( Enter )
@@ -481,7 +481,7 @@ keysMap := Map()
       ; 分号( ; )
       keysMap['caps_ctrl_semicolon'] := "keyFunc_ctrl_semicolon"
 
-      ; 双引号( "" )
+      ; 单引号('')
       keysMap['caps_ctrl_quote'] := "keyFunc_ctrl_quote"
 
       ; ( Enter )
@@ -610,7 +610,7 @@ keysMap := Map()
         ; 分号( ; )
         keysMap['caps_win_semicolon'] := "keyFunc_win_semicolon"
 
-        ; 双引号( "" )
+        ; 单引号('')
         keysMap['caps_win_quote'] := "keyFunc_win_quote"
 
         ; ( Enter )

@@ -24,6 +24,12 @@ customKeys:={
 /** VsCode的部分快捷键 */
 #HotIf WinActive('ahk_exe Code.exe') && GetKeyState('CapsLock', 'P')
 
+; Vscode中如果触发 CapsLock + 9 则只输入一个"(",因为Vscode会自动不全另一半括号
+9::{
+    showToolTips('vscode自动补全()')
+    SendInput('(')
+}
+
 ; 删除行(Vscode 默认快捷键 Ctrl + Shift + K)
 d:: {
     SendInput('^+k')

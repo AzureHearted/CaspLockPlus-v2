@@ -1,10 +1,15 @@
 #Requires AutoHotkey v2.0
-#Include <WebView2/WebView2>
+; #Include <WebView2/WebView2>
 #Include <lib_functions>
+
+u:=UISetting('')
+
+
+
 
 class UISetting {
     gui := Gui('-DPIScale AlwaysOnTop', '用户设置')
-    open := false
+    
     iniFilePath := ''
 
     ; 配置对象
@@ -17,6 +22,7 @@ class UISetting {
     ; 构造函数
     __New(iniFilePath) {
         this.iniFilePath := iniFilePath
+        this.open := false
         ; 构建界面
 
         ; general:=this.gui.AddGroupBox('w','常规')
@@ -32,11 +38,15 @@ class UISetting {
         this.gui.AddButton('+x+5', '关闭').OnEvent('Click', (*) => this.Save())
 
         ; 绑定事件
-        this.RegistorEvent()
+        this.RegisterEvent()
+    }
+
+    __Delete() {
+
     }
 
     ; 注册事件
-    RegistorEvent() {
+    RegisterEvent() {
         this.clipWaitEdit.OnEvent('Change', (GuiCtrlObj, Info) => (this.ClipWaitTimeEditChange(GuiCtrlObj, Info)))
     }
 

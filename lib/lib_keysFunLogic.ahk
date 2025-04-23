@@ -57,7 +57,7 @@ funcLogic_doubleChar(char1, char2 := "") {
     }
     charLen := StrLen(char2)
     selText := getSelText()
-    ; showToolTips("替换结果：" . char1 . selText . char2)
+    showToolTips("替换结果：" . char1 . selText . char2)
     ClipboardOld := ClipboardAll()
     if (selText) {
         A_Clipboard := char1 . selText . char2

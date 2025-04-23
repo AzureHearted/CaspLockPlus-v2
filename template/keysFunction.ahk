@@ -150,7 +150,7 @@
         keyFunc_semicolon() {
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_quote() {
         }
 
@@ -347,7 +347,7 @@
         keyFunc_alt_semicolon() {
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_alt_quote() {
         }
 
@@ -544,7 +544,7 @@
         keyFunc_shift_semicolon() {
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_shift_quote() {
         }
 
@@ -741,7 +741,7 @@
         keyFunc_ctrl_semicolon() {
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_ctrl_quote() {
         }
 
@@ -938,7 +938,7 @@
         keyFunc_win_semicolon() {
         }
 
-        ; 双引号( "" )
+        ; 单引号('')
         keyFunc_win_quote() {
         }
 
