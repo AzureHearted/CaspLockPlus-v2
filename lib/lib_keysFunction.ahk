@@ -31,7 +31,7 @@ uiSets := {
             ; 监听剪贴板，进行剪贴板显示
             OnClipboardChange(handle)
             handle(*) {
-                showToolTips(A_Clipboard)
+                ShowToolTips(A_Clipboard)
                 OnClipboardChange(handle, 0)
             }
         }
@@ -93,8 +93,13 @@ uiSets := {
             SendInput('{Escape}')
         }
         keyFunc_q() {
-            ; 呼出Quicker搜索框
-            Run("quicker:runaction:c2a16d92-c9f6-4c20-9f09-f85fb05084c2")
+            ; 呼出Quicker搜索框，并填入选中内容(如果有)
+            text := ''
+            if (!WinActive('Quicker搜索')) {
+                ; 只有不在Quicker搜索框下才尝试获取选中文本
+                text := GetSelText()
+            }
+            Run("quicker:search:" text)
         }
         keyFunc_r() {
             ; 注释当前行
@@ -267,8 +272,8 @@ uiSets := {
 
         ; 单引号('')
         keyFunc_quote() {
-            ; 用 '' 包裹选中内容
-            funcLogic_doubleChar("'")
+            ; 用 "" 包裹选中内容
+            funcLogic_doubleChar('"')
         }
 
         ; ( Enter )
@@ -342,12 +347,46 @@ uiSets := {
         keyFunc_alt_b() {
         }
         keyFunc_alt_c() {
+            ; 获取选中的文件路径
+            paths := GetSelectedExplorerItemsPaths()
+            if (!paths.Length) {
+                ShowToolTips('没有选中文件(文件夹)')
+                return
+            }
+            output := ''
+            index := 1
+            for (path in paths) {
+                output := output path (index < paths.Length ? '`n' : '')
+                index++
+            }
+            OutputDebug('选中的路径：`n' output)
+            A_Clipboard := output
+            ShowToolTips('已获取路径：`n' output)
         }
         keyFunc_alt_d() {
         }
         keyFunc_alt_e() {
         }
         keyFunc_alt_f() {
+            ; todo 打开Everything搜索选中内容🔍
+            ; 读取ini中记录的Everything路径
+            pathEverythingExe := IniRead('setting.ini', 'Everything', 'path', "C:\Program Files\Everything\Everything.exe")
+            ; 获取选中文本
+            text := GetSelText()
+            if (!FileExist(pathEverythingExe)) {
+                ; 如果默认Everything路径不存在，则查看进程中是否有Everything进程
+                if (!ProcessExist('Everything.exe')) {
+                    ; 没有找到Everything进程则提示用户
+                    ShowToolTips('请确保Everything在后台运行')
+                    return
+                }
+                ; 找到Everything进程后更新Everything进程路径
+                pathEverythingExe := ProcessGetPath('Everything.exe')
+                ; 更新配置文件中记录的Everything路径
+                IniWrite(pathEverythingExe, 'setting.ini', 'Everything', 'path')
+            }
+            ; 通过命令行调用Everything搜索
+            Run(pathEverythingExe ' -s "' text '"')
         }
         keyFunc_alt_g() {
         }
@@ -546,8 +585,8 @@ uiSets := {
 
         ; 单引号('')
         keyFunc_alt_quote() {
-            ; 用 "" 包裹选中内容
-            funcLogic_doubleChar("`"")
+            ; 用 “” 包裹选中内容
+            funcLogic_doubleChar('“', '”')
         }
 
         ; ( Enter )

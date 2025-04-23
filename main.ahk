@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 
+#Include <lib_setting>
 #Include <lib_functions>
 #Include <lib_keysFunLogic>
 #Include <lib_bindingWindow>
@@ -8,11 +9,14 @@
 #Include gui\ui_setting.ahk
 #Include gui\ui_webview.ahk
 
+;todo 初始化设置
+InitSetting()
+
 ; 编译前必需开启这段代码
 if (!A_IsAdmin) {
     try
     {
-        showToolTips('检测到脚本并未以管理员身份启动，现重新已管理员身份启动')
+        ShowToolTips('检测到脚本并未以管理员身份启动，现重新已管理员身份启动')
         Run('*RunAs "' A_ScriptFullPath '"')
         ExitApp
     }
@@ -80,7 +84,7 @@ funcLogic_capsLockOpen() {
     global CapsLockOpen
     CapsLockOpen := !CapsLockOpen
     SetCapsLockState(CapsLockOpen)
-    showToolTips("CapsLock键(已" (CapsLockOpen ? '开启' : '关闭') ")")
+    ShowToolTips("CapsLock键(已" (CapsLockOpen ? '开启' : '关闭') ")")
     return
 }
 

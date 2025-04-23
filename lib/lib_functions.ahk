@@ -1,19 +1,17 @@
 #Requires AutoHotkey v2.0
 
-#Include <lib_setting>
-
 /**
  * 显示ToolTips消息
  * @param msg 消息内容
  * @param duration 持续时间
  */
-showToolTips(msg, duration := 1000) {
+ShowToolTips(msg, duration := 1000) {
     ToolTip(msg)
     SetTimer(() => ToolTip(), duration)
 }
 
 ;获取选中的文本(无污染剪贴板)
-getSelText() {
+GetSelText() {
     ClipboardOld := ClipboardAll()
     A_Clipboard := ""
     SendInput('^{c}')
@@ -38,4 +36,43 @@ getSelText() {
     }
     A_Clipboard := ClipboardOld
     return
+}
+
+
+;! 获取活动的资源管理器路径
+GetActiveExplorerPath() {
+    hwndActive := WinActive("A")
+    shellApp := ComObject("Shell.Application")
+    for (window in shellApp.Windows) {
+        try {
+            if InStr(window.FullName, "explorer.exe") && window.HWND = hwndActive {
+                return window.Document.Folder.Self.Path
+            }
+        }
+    }
+    return ""
+}
+
+;! 获取选中的项(文件资源管理器中)的路径列表
+GetSelectedExplorerItemsPaths() {
+    hwndActive := WinActive("A") ; 获取当前活动窗口句柄
+    shellApp := ComObject("Shell.Application")
+    paths := []
+
+    for (window in shellApp.Windows) {
+        try {
+            ; 只处理 explorer.exe 相关窗口
+            if InStr(window.FullName, "explorer.exe") {
+                ; 对比窗口句柄
+                if (window.HWND = hwndActive) {
+                    for (item in window.Document.SelectedItems) {
+                        ; OutputDebug(item.Path)
+                        paths.Push(item.Path)
+                    }
+                    return paths
+                }
+            }
+        }
+    }
+    return paths
 }

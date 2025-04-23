@@ -1,7 +1,8 @@
 ﻿#Requires AutoHotkey v2.0
 
 class BindingWindow {
-    ; 绑定窗口
+
+    ;! 绑定窗口
     static binding(key) {
         ; 获取当前窗口信息
         nId := WinExist('A')
@@ -21,7 +22,7 @@ class BindingWindow {
 
         if (section && ((nId == iniKeyId) || (RegExMatch(nClass, '^' mrClass[]
         ) &&
-        (nExe == iniKeyExe)))) {
+            (nExe == iniKeyExe)))) {
             this.showToolTips('取消绑定')
             IniDelete('winsInfosRecorder.ini', key)
         } else {
@@ -31,11 +32,9 @@ class BindingWindow {
             IniWrite(nExe, 'winsInfosRecorder.ini', key, 'ahk_exe')         ;写入进程名到ini
             IniWrite(nPath, 'winsInfosRecorder.ini', key, 'path')         ;写入path到ini
         }
-
-        ; this.showToolTips('已经将窗口' . ahk_name . '绑定到按键：' . key . '上')
     }
 
-    ; 激活窗口
+    ;! 激活窗口
     static active(key) {
         ; 查询当前key是否绑定了窗口
         section := IniRead('winsInfosRecorder.ini', key, , '')
@@ -65,52 +64,18 @@ class BindingWindow {
                 IniWrite(tempId, 'winsInfosRecorder.ini', key, 'ahk_id')   ;更新id到ini
                 tId := tempId
             } else {
-                ; 如果通过 ahk_class 和 ahk_exe 没有找到窗口，则判断是否启动进程
-                ; 只有进程不存在才启动进程
-                ; if (!ProcessExist(tExe)) {
-                ;     ; 如果进程不存在且 target_path 存在就直接运行 target_path
-                ;     if (FileExist(tPath)) {
-                ;         ; this.showToolTips('进程不存，在尝试启动进程：' tExe)
-                ;         TrayTip('在尝试启动进程：' tExe, '进程不存', 'Icon!')
-                ;         try {
-                ;             Run(tPath)
-                ;         } catch Error {
-                ;             this.showToolTips(Error)
-                ;         }
-                ;     } else {
-                ;         ; this.showToolTips('进程不存，且无法找到程序路径')
-                ;         TrayTip('且无法找到进程"' tExe '"的路径 (请重新绑定窗口)', '进程不存', 'Icon!')
-                ;     }
-                ; } else {
-                ;     ; 如果进程存在则进行如下判断(排除一些特殊情况)
-                ;     ; if (tExe == 'explorer.exe' && tClass == 'CabinetWClass') {
-                ;     ;     ; 如果目标进程是explorer且类名是CabinetWClass则运行 explorer.exe
-                ;     ;     Run(tExe)
-                ;     ; } else {
-                ;     ;     ; 除去满足 if 条件外的情况，情况都默认进行提示
-                ;     ;     ; this.showToolTips('进程存在但找不到窗口')
-                ;     ;     TrayTip('窗口不存在' tExe '在但找不到窗口', , 'Icon!')
-                ;     ; }
-                ;     try {
-                ;         Run(tPath)
-                ;     } catch Error {
-                ;         this.showToolTips(Error)
-                ;     }
-
-                ; }
-
                 ; 如果进程不存在且 target_path 存在就直接运行 target_path
                 if (FileExist(tPath)) {
-                    ; this.showToolTips('进程不存，在尝试启动进程：' tExe)
-                    TrayTip('在尝试启动进程：' tExe, '进程不存', 'Icon!')
+                    ; this.showToolTips('进程不存在，在尝试启动进程：' tExe)
+                    TrayTip('在尝试启动进程：' tExe, '进程不存在', 'Icon!')
                     try {
                         Run(tPath)
                     } catch Error {
                         this.showToolTips(Error)
                     }
                 } else {
-                    ; this.showToolTips('进程不存，且无法找到程序路径')
-                    TrayTip('且无法找到进程"' tExe '"的路径 (请重新绑定窗口)', '进程不存', 'Icon!')
+                    ; this.showToolTips('进程不存在')
+                    TrayTip('且无法找到进程"' tExe '"的路径 (请重新绑定窗口)', '进程不存在', 'Icon!')
                 }
                 return
             }
@@ -128,7 +93,7 @@ class BindingWindow {
 
     }
     /**
-     * 显示ToolTips消息
+     * * 显示ToolTips消息
      * @param msg 消息内容
      * @param duration 持续时间
      */

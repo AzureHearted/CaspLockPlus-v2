@@ -24,12 +24,6 @@ customKeys:={
 /** VsCode的部分快捷键 */
 #HotIf WinActive('ahk_exe Code.exe') && GetKeyState('CapsLock', 'P')
 
-; Vscode中如果触发 CapsLock + 9 则只输入一个"(",因为Vscode会自动不全另一半括号
-9::{
-    showToolTips('vscode自动补全()')
-    SendInput('(')
-}
-
 ; 删除行(Vscode 默认快捷键 Ctrl + Shift + K)
 d:: {
     SendInput('^+k')
@@ -37,12 +31,12 @@ d:: {
 
 ; 向⬆️复制行
 n:: {
-    showToolTips('向⬆️复制行')
+    ShowToolTips('向⬆️复制行')
     SendInput('+!{Up}')
 }
 ; 向⬇️复制行
 m:: {
-    showToolTips('向⬇️复制行')
+    ShowToolTips('向⬇️复制行')
     SendInput('+!{Down}')
 }
 
@@ -52,12 +46,12 @@ m:: {
 #HotIf WinActive('ahk_exe Quicker.exe') && GetKeyState('CapsLock', 'P')
 ; 向⬇️复制行
 m:: {
-    showToolTips('向⬇️复制行')
+    ShowToolTips('向⬇️复制行')
     SendInput('^{d}')
 }
 ; 删除当前行
 d:: {
-    showToolTips('向⬇️复制行')
+    ShowToolTips('向⬇️复制行')
     SendInput('^+{d}')
 }
 #HotIf
