@@ -58,8 +58,8 @@ funcLogic_capsLockOpen() {
     return
 }
 
-/** 导入自定义按键设置(位置尽量考前) */
-#Include custom\custom_keysSet.ahk
+/** 导入用户自定义按键设置(位置尽量考前) */
+#Include user_keysSet.ahk
 
 /** CaspLock 热键 */
 #HotIf GetKeyState('CapsLock', 'P')

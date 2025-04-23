@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
 
-#Include ../lib/lib_functions.ahk
+#Include <lib_functions>
 
 ; 自定义快捷键
 customKeys:={

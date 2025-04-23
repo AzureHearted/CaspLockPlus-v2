@@ -4,7 +4,8 @@
 #Include <lib_bindingWindow>
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
-#Include ../custom/custom_keysSet.ahk
+; #Include ../user_keysSet.ahk
+
 
 /** UI集合 */
 uiSets := {
