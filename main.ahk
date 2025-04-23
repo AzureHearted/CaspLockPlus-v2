@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 
+
 #Include <lib_init>
 
 #Include <lib_functions>
@@ -9,6 +10,7 @@
 #Include <lib_keysFunction>
 #Include gui\ui_setting.ahk
 #Include gui\ui_webview.ahk
+
 
 ; 编译前必需开启这段代码
 if (!A_IsAdmin) {

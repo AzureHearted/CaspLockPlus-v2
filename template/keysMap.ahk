@@ -1,5 +1,8 @@
 #Requires AutoHotkey v2.0
 
+; 按键映射空模版
+
+
 ; 按键映射
 keysMap := Map()
 
