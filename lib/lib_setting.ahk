@@ -1,5 +1,8 @@
 #Requires AutoHotkey v2.0
-#Include lib_functions.ahk
+#Include <lib_functions>
+#Include <lib_userHotString>
+
+userHotStr := UserHotString('settings.ini')
 
 ;! 初始化设置
 InitSetting() {
@@ -15,4 +18,6 @@ InitSetting() {
     } else {
         ShowToolTips('已读取配置~')
     }
+    ;* 开启用户则字符串
+    userHotStr.Enable()
 }

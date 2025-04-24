@@ -23,10 +23,10 @@ class BindingWindow {
         if (section && ((nId == iniKeyId) || (RegExMatch(nClass, '^' mrClass[]
         ) &&
             (nExe == iniKeyExe)))) {
-            this.showToolTips('取消绑定')
+            this.ShowToolTips('取消绑定')
             IniDelete('winsInfosRecorder.ini', key)
         } else {
-            this.showToolTips('覆盖绑定')
+            this.ShowToolTips('覆盖绑定')
             IniWrite(nId, 'winsInfosRecorder.ini', key, 'ahk_id')	        ;写入id到ini
             IniWrite(nClass, 'winsInfosRecorder.ini', key, 'ahk_class')  ;写入class到ini
             IniWrite(nExe, 'winsInfosRecorder.ini', key, 'ahk_exe')         ;写入进程名到ini
@@ -39,7 +39,7 @@ class BindingWindow {
         ; 查询当前key是否绑定了窗口
         section := IniRead('winsInfosRecorder.ini', key, , '')
         if (!section) {
-            this.showToolTips('该按键尚未绑定窗口')
+            this.ShowToolTips('该按键尚未绑定窗口')
             return
         }
 
@@ -70,8 +70,8 @@ class BindingWindow {
                     TrayTip('在尝试启动进程：' tExe, '进程不存在', 'Icon!')
                     try {
                         Run(tPath)
-                    } catch Error {
-                        this.showToolTips(Error)
+                    } catch Error as e {
+                        this.ShowToolTips(e.Message)
                     }
                 } else {
                     ; this.showToolTips('进程不存在')
@@ -97,7 +97,7 @@ class BindingWindow {
      * @param msg 消息内容
      * @param duration 持续时间
      */
-    static showToolTips(msg, duration := 1000) {
+    static ShowToolTips(msg, duration := 1000) {
         ToolTip(msg)
         SetTimer(() => ToolTip(), duration)
     }
