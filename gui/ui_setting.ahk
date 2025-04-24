@@ -3,7 +3,7 @@
 #Include <lib_functions>
 
 class UISetting {
-    gui := Gui('-DPIScale AlwaysOnTop', '用户设置')
+    gui := Gui('AlwaysOnTop', '用户设置')
     open := false   ;窗口开启标识符
     iniPath := ''
 
@@ -11,11 +11,11 @@ class UISetting {
     __New(iniPath) {
         this.iniPath := iniPath
         ; 构建界面
-
+        
         ; 开机自启
         this.autoStartCheckBox := this.gui.AddCheckbox('r1.5 vAutoStart', '开机启动')
         ; 按钮
-        this.gui.AddButton('r1', '保存').OnEvent('Click', (*) => this.Save())
+        this.gui.AddButton('r1', '保存(&S)').OnEvent('Click', (*) => this.Save())
         this.gui.AddButton('+x+5', '关闭').OnEvent('Click', (*) => this.Close())
 
         ; 绑定事件
@@ -43,7 +43,8 @@ class UISetting {
 
     ; 保存配置
     Save() {
-        showToolTips('保存')
+        ; showToolTips('保存')
+        OutputDebug('设置保存')
         IniWrite(this.autoStartCheckBox.Value, this.iniPath, 'General', 'AutoStart')
         this.Close()
     }

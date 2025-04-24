@@ -5,19 +5,25 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "ahk",
-      "request": "launch",
-      "name": "v1版本调试",
-      "program": "${workspaceFolder}/CapsLockPlus v1 (参考)/CapsLockPlus.ahk",
-      "stopOnEntry": true
-    },
-    {
       "type": "ahk2",
       "request": "launch",
       "name": "v2版本调试",
       "program": "${workspaceFolder}/main.ahk",
       "stopOnEntry": true
     },
-    
+    {
+      "type": "ahk2",
+      "request": "launch",
+      "name": "调试当前文件",
+      "program": "",
+      "stopOnEntry": true
+    },
+    {
+      "type": "ahk",
+      "request": "launch",
+      "name": "v1版本调试",
+      "program": "${workspaceFolder}/CapsLockPlus v1 (参考)/CapsLockPlus.ahk",
+      "stopOnEntry": true
+    }
   ]
 }

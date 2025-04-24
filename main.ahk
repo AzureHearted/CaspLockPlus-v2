@@ -1,107 +1,27 @@
 #Requires AutoHotkey v2.0
 
-#Include <lib_setting>
+#Include <lib_initialize>
 #Include <lib_functions>
 #Include <lib_keysFunLogic>
 #Include <lib_bindingWindow>
 #Include <lib_keysMap>
 #Include <lib_keysFunction>
-#Include gui\ui_setting.ahk
-#Include gui\ui_webview.ahk
+#Include user_keysSet.ahk ;* 导入用户自定义按键设置(位置尽量靠前)
 
-;todo 初始化设置
-InitSetting()
-
-; 编译前必需开启这段代码
-if (!A_IsAdmin) {
-    try
-    {
-        ShowToolTips('检测到脚本并未以管理员身份启动，现重新已管理员身份启动')
-        Run('*RunAs "' A_ScriptFullPath '"')
-        ExitApp
-    }
-    catch Error {
-        MsgBox "无法以管理员身份运行脚本。错误：" Error
-        ExitApp
-    }
-}
-
-/** 脚本图标 */
-CapsLockPlusIcon := './res/CapsLockPlusIcon.ico'
-if FileExist(CapsLockPlusIcon) {
-    TraySetIcon(CapsLockPlusIcon, 1)
-}
-
-/** CapsLock 状态控制 */
-
-; CapsLock状态
-CapsLockOpen := GetKeyState('CapsLock', 'T') ; 记录初始CapsLock按键状态
-
-#Include gui\ui_tips.ahk
-ui_Tips := UITips('test')
-
-; 屏蔽CapsLock原始事件
-CapsLockHold := false
-
+;todo 初始化
+Init()
 
 CapsLock:: {
-    ; global ui_Tips, CapsLockHold
-    ; if (CapsLockHold)
-    ;     return
-    ; CapsLockHold := true
-    ; holdCapsLock()
+    funcLogic_capsHold()
 }
-
-holdCapsLock(time := 1000) {
-    global ui_Tips, CapsLockHold
-    OutputDebug('开始计时')
-    SetTimer(handle, -time)
-
-    handle() {
-        if (GetKeyState('CapsLock', 'P'))
-            ; 如果⌛️计时器结束时候还检测到
-            OutputDebug('识别到按住CapsLock')
-        ui_Tips.Show()
-        KeyWait('CapsLock')
-        CapsLockHold := false
-        ui_Tips.Close()
-    }
-}
-
-; CapsLock Up:: {
-;     ui_Tips.Close()
-; }
 
 ; 通过 Shift + CapsLock 触发切换CapsLock
 +CapsLock:: {
-    funcLogic_capsLockOpen()
+    funcLogic_capsSwitch()
 }
-
-/**
- * CapsLock 开关切换
- */
-funcLogic_capsLockOpen() {
-    global CapsLockOpen
-    CapsLockOpen := !CapsLockOpen
-    SetCapsLockState(CapsLockOpen)
-    ShowToolTips("CapsLock键(已" (CapsLockOpen ? '开启' : '关闭') ")")
-    return
-}
-
-/** 导入用户自定义按键设置(位置尽量靠前) */
-#Include user_keysSet.ahk
 
 /** CapsLock 热键 */
 #HotIf GetKeyState('CapsLock', 'P')
-
-/** 当按下CapsLock键时防止按下alt键 */
-; RAlt::
-; LAlt::
-; {
-;     if (GetKeyState('CapsLock', 'p')) {
-;         OutputDebug('不触发alt')
-;     }
-; }
 
 ; ================= CapsLock + Key ... 开始 =================
 ; =========   A ~ Z ... 开始

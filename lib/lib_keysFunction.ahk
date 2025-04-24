@@ -6,12 +6,6 @@
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
 
-/** UI集合 */
-uiSets := {
-    setting: UISetting('settings.ini'),
-    webview: UIWebView()
-}
-
 ; ================= CapsLock + Key ... 开始 =================
 {
     ; =========   A ~ Z ... 开始
@@ -170,17 +164,16 @@ uiSets := {
         }
         keyFunc_f10() {
             /** WebView2浏览器 */
-            ; showToolTips('当前热键' . A_ThisHotkey)
-            ; global uiSets
-            ; uiSets.webview.Show()
+            global UISets
+            UISets.webview.Show()
         }
         keyFunc_f11() {
 
         }
         keyFunc_f12() {
             /** 设置窗口 */
-            global uiSets
-            uiSets.setting.Show()
+            global UISets
+            UISets.setting.Show()
         }
     }
 
