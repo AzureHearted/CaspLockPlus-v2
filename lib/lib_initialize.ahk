@@ -36,7 +36,7 @@ UserConfig := {
 ;* UI集合
 UISets := {
     setting: UISetting('settings.ini'), ; 设置窗口
-    hotTips: UITips(, '已经绑定的窗口信息', ["按键", "进程"]), ; Caps按住一段时间后的提示窗口及内容
+    hotTips: UITips(, '已绑定的窗口`t', ["按键", "进程"]), ; Caps按住一段时间后的提示窗口及内容
     webview: UIWebView(),
 }
 
