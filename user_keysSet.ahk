@@ -15,7 +15,7 @@ customKeys:={
     SendInput('!{Up}')
 }
 
-; 向⬆⬇️移动代码
+; 向⬇️移动代码
 #k:: {
     SendInput('!{Down}')
 }
