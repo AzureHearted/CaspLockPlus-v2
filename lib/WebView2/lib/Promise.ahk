@@ -65,7 +65,7 @@ class Promise {
 	 */
 	onCompleted(callback) {
 		ObjHasOwnProp(this, 'callbacks') ? this.callbacks.Push(callback) : nextTick(this, callback)
-		static nextTick(this, callback) => SetTimer(() => callbackA(this), -1)
+		static nextTick(this, callback) => SetTimer(() => callback(this), -1)
 	}
 	/**
 	 * Attaches callbacks for the resolution and/or rejection of the Promise.
