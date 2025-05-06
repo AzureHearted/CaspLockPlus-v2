@@ -71,13 +71,13 @@ keysMap := Map()
     ; =========   其他符号 ... 开始
     {
         ; 反引号( ` )
-        keysMap['caps_backquote'] := "keyFunc_backquote"
+        keysMap['caps_``'] := "keyFunc_backquote"
 
         ; 减号( - )
-        keysMap['caps_minus'] := "keyFunc_minus"
+        keysMap['caps_-'] := "keyFunc_minus"
 
         ; 等于号（ = ）
-        keysMap['caps_equal'] := "keyFunc_equal"
+        keysMap['caps_='] := "keyFunc_equal"
 
         ; ( Backspace )
         keysMap['caps_backspace'] := "keyFunc_backspace"
@@ -86,31 +86,31 @@ keysMap := Map()
         keysMap['caps_tab'] := "keyFunc_tab"
 
         ; 左方括号( [ )
-        keysMap['caps_leftSquareBracket'] := "keyFunc_leftSquareBracket"
+        keysMap['caps_['] := "keyFunc_leftSquareBracket"
 
         ; 右方括号( ] )
-        keysMap['caps_rightSquareBracket'] := "keyFunc_rightSquareBracket"
+        keysMap['caps_]'] := "keyFunc_rightSquareBracket"
 
         ; 反斜杠( \ )
-        keysMap['caps_backslash'] := "keyFunc_backslash"
+        keysMap['caps_\'] := "keyFunc_backslash"
 
         ; 分号( ; )
-        keysMap['caps_semicolon'] := "keyFunc_semicolon"
+        keysMap['caps_;'] := "keyFunc_semicolon"
 
         ; 单引号('')
-        keysMap['caps_quote'] := "keyFunc_quote"
+        keysMap["caps_'"] := "keyFunc_quote"
 
         ; ( Enter )
         keysMap['caps_enter'] := "keyFunc_enter"
 
         ; 逗号( , )
-        keysMap['caps_comma'] := "keyFunc_comma"
+        keysMap['caps_,'] := "keyFunc_comma"
 
         ; 句号( 。 )
-        keysMap['caps_dot'] := "keyFunc_dot"
+        keysMap['caps_.'] := "keyFunc_dot"
 
         ; 斜杠( / )
-        keysMap['caps_slash'] := "keyFunc_slash"
+        keysMap['caps_/'] := "keyFunc_slash"
 
         ; 空格( Space )
         keysMap['caps_space'] := "keyFunc_space"
@@ -119,19 +119,19 @@ keysMap := Map()
     ; =========   鼠标操作 ... 开始
     {
         ; 鼠标滚轮向前
-        keysMap['caps_wheelUp'] := "keyFunc_wheelUp"
+        keysMap['caps_wheelup'] := "keyFunc_wheelUp"
 
         ; 鼠标滚轮向前
-        keysMap['caps_wheelDown'] := "keyFunc_wheelDown"
+        keysMap['caps_wheeldown'] := "keyFunc_wheelDown"
 
         ; 鼠标中键
-        keysMap['caps_midButton'] := "keyFunc_midButton"
+        keysMap['caps_mbutton'] := "keyFunc_midButton"
 
         ; 鼠标左键
-        keysMap['caps_leftButton'] := "keyFunc_leftButton"
+        keysMap['caps_lbutton'] := "keyFunc_leftButton"
 
         ; 鼠标右键
-        keysMap['caps_rightButton'] := "keyFunc_rightButton"
+        keysMap['caps_rbutton'] := "keyFunc_rightButton"
     }
 }
 
@@ -200,13 +200,13 @@ keysMap := Map()
     ; =========   其他符号 ... 开始
     {
         ; 反引号( ` )
-        keysMap['caps_alt_backquote'] := "keyFunc_alt_backquote"
+        keysMap['caps_alt_``'] := "keyFunc_alt_backquote"
 
         ; 减号( - )
-        keysMap['caps_alt_minus'] := "keyFunc_alt_minus"
+        keysMap['caps_alt_-'] := "keyFunc_alt_minus"
 
         ; 等于号（ = ）
-        keysMap['caps_alt_equal'] := "keyFunc_alt_equal"
+        keysMap['caps_alt_='] := "keyFunc_alt_equal"
 
         ; ( Backspace )
         keysMap['caps_alt_backspace'] := "keyFunc_alt_backspace"
@@ -215,31 +215,31 @@ keysMap := Map()
         keysMap['caps_alt_tab'] := "keyFunc_alt_tab"
 
         ; 左方括号( [ )
-        keysMap['caps_alt_leftSquareBracket'] := "keyFunc_alt_leftSquareBracket"
+        keysMap['caps_alt_['] := "keyFunc_alt_leftSquareBracket"
 
         ; 右方括号( ] )
-        keysMap['caps_alt_rightSquareBracket'] := "keyFunc_alt_rightSquareBracket"
+        keysMap['caps_alt_]'] := "keyFunc_alt_rightSquareBracket"
 
         ; 反斜杠( \ )
-        keysMap['caps_alt_backslash'] := "keyFunc_alt_backslash"
+        keysMap['caps_alt_\'] := "keyFunc_alt_backslash"
 
         ; 分号( ; )
-        keysMap['caps_alt_semicolon'] := "keyFunc_alt_semicolon"
+        keysMap['caps_alt_;'] := "keyFunc_alt_semicolon"
 
         ; 单引号('')
-        keysMap['caps_alt_quote'] := "keyFunc_alt_quote"
+        keysMap["caps_alt_'"] := "keyFunc_alt_quote"
 
         ; ( Enter )
         keysMap['caps_alt_enter'] := "keyFunc_alt_enter"
 
         ; 逗号( , )
-        keysMap['caps_alt_comma'] := "keyFunc_alt_comma"
+        keysMap['caps_alt_,'] := "keyFunc_alt_comma"
 
         ; 句号( 。 )
-        keysMap['caps_alt_dot'] := "keyFunc_alt_dot"
+        keysMap['caps_alt_.'] := "keyFunc_alt_dot"
 
         ; 斜杠( / )
-        keysMap['caps_alt_slash'] := "keyFunc_alt_slash"
+        keysMap['caps_alt_/'] := "keyFunc_alt_slash"
 
         ; 空格( Space )
         keysMap['caps_alt_space'] := "keyFunc_alt_space"
@@ -248,19 +248,19 @@ keysMap := Map()
     ; =========   鼠标操作 ... 开始
     {
         ; 鼠标滚轮向前
-        keysMap['caps_alt_wheelUp'] := "keyFunc_alt_wheelUp"
+        keysMap['caps_alt_wheelup'] := "keyFunc_alt_wheelUp"
 
         ; 鼠标滚轮向前
-        keysMap['caps_alt_wheelDown'] := "keyFunc_alt_wheelDown"
+        keysMap['caps_alt_wheeldown'] := "keyFunc_alt_wheelDown"
 
         ; 鼠标中键
-        keysMap['caps_alt_midButton'] := "keyFunc_alt_midButton"
+        keysMap['caps_alt_mbutton'] := "keyFunc_alt_midButton"
 
         ; 鼠标左键
-        keysMap['caps_alt_leftButton'] := "keyFunc_alt_leftButton"
+        keysMap['caps_alt_lbutton'] := "keyFunc_alt_leftButton"
 
         ; 鼠标右键
-        keysMap['caps_alt_rightButton'] := "keyFunc_alt_rightButton"
+        keysMap['caps_alt_rbutton'] := "keyFunc_alt_rightButton"
     }
 }
 
@@ -329,13 +329,13 @@ keysMap := Map()
     ; =========   其他符号 ... 开始
     {
         ; 反引号( ` )
-        keysMap['caps_shift_backquote'] := "keyFunc_shift_backquote"
+        keysMap['caps_shift_``'] := "keyFunc_shift_backquote"
 
         ; 减号( - )
-        keysMap['caps_shift_minus'] := "keyFunc_shift_minus"
+        keysMap['caps_shift_-'] := "keyFunc_shift_minus"
 
         ; 等于号（ = ）
-        keysMap['caps_shift_equal'] := "keyFunc_shift_equal"
+        keysMap['caps_shift_='] := "keyFunc_shift_equal"
 
         ; ( Backspace )
         keysMap['caps_shift_backspace'] := "keyFunc_shift_backspace"
@@ -344,31 +344,31 @@ keysMap := Map()
         keysMap['caps_shift_tab'] := "keyFunc_shift_tab"
 
         ; 左方括号( [ )
-        keysMap['caps_shift_leftSquareBracket'] := "keyFunc_shift_leftSquareBracket"
+        keysMap['caps_shift_['] := "keyFunc_shift_leftSquareBracket"
 
         ; 右方括号( ] )
-        keysMap['caps_shift_rightSquareBracket'] := "keyFunc_shift_rightSquareBracket"
+        keysMap['caps_shift_]'] := "keyFunc_shift_rightSquareBracket"
 
         ; 反斜杠( \ )
-        keysMap['caps_shift_backslash'] := "keyFunc_shift_backslash"
+        keysMap['caps_shift_\'] := "keyFunc_shift_backslash"
 
         ; 分号( ; )
-        keysMap['caps_shift_semicolon'] := "keyFunc_shift_semicolon"
+        keysMap['caps_shift_;'] := "keyFunc_shift_semicolon"
 
         ; 单引号('')
-        keysMap['caps_shift_quote'] := "keyFunc_shift_quote"
+        keysMap["caps_shift_'"] := "keyFunc_shift_quote"
 
         ; ( Enter )
         keysMap['caps_shift_enter'] := "keyFunc_shift_enter"
 
         ; 逗号( , )
-        keysMap['caps_shift_comma'] := "keyFunc_shift_comma"
+        keysMap['caps_shift_,'] := "keyFunc_shift_comma"
 
         ; 句号( 。 )
-        keysMap['caps_shift_dot'] := "keyFunc_shift_dot"
+        keysMap['caps_shift_.'] := "keyFunc_shift_dot"
 
         ; 斜杠( / )
-        keysMap['caps_shift_slash'] := "keyFunc_shift_slash"
+        keysMap['caps_shift_/'] := "keyFunc_shift_slash"
 
         ; 空格( Space )
         keysMap['caps_shift_space'] := "keyFunc_shift_space"
@@ -377,19 +377,19 @@ keysMap := Map()
     ; =========   鼠标操作 ... 开始
     {
         ; 鼠标滚轮向前
-        keysMap['caps_shift_wheelUp'] := "keyFunc_shift_wheelUp"
+        keysMap['caps_shift_wheelup'] := "keyFunc_shift_wheelUp"
 
         ; 鼠标滚轮向前
-        keysMap['caps_shift_wheelDown'] := "keyFunc_shift_wheelDown"
+        keysMap['caps_shift_wheeldown'] := "keyFunc_shift_wheelDown"
 
         ; 鼠标中键
-        keysMap['caps_shift_midButton'] := "keyFunc_shift_midButton"
+        keysMap['caps_shift_mbutton'] := "keyFunc_shift_midButton"
 
         ; 鼠标左键
-        keysMap['caps_shift_leftButton'] := "keyFunc_shift_leftButton"
+        keysMap['caps_shift_lbutton'] := "keyFunc_shift_leftButton"
 
         ; 鼠标右键
-        keysMap['caps_shift_rightButton'] := "keyFunc_shift_rightButton"
+        keysMap['caps_shift_rbutton'] := "keyFunc_shift_rightButton"
     }
 }
 
@@ -458,13 +458,13 @@ keysMap := Map()
   ; =========   其他符号 ... 开始
   {
       ; 反引号( ` )
-      keysMap['caps_ctrl_backquote'] := "keyFunc_ctrl_backquote"
+      keysMap['caps_ctrl_``'] := "keyFunc_ctrl_backquote"
 
       ; 减号( - )
-      keysMap['caps_ctrl_minus'] := "keyFunc_ctrl_minus"
+      keysMap['caps_ctrl_-'] := "keyFunc_ctrl_minus"
 
       ; 等于号（ = ）
-      keysMap['caps_ctrl_equal'] := "keyFunc_ctrl_equal"
+      keysMap['caps_ctrl_='] := "keyFunc_ctrl_equal"
 
       ; ( Backspace )
       keysMap['caps_ctrl_backspace'] := "keyFunc_ctrl_backspace"
@@ -473,31 +473,31 @@ keysMap := Map()
       keysMap['caps_ctrl_tab'] := "keyFunc_ctrl_tab"
 
       ; 左方括号( [ )
-      keysMap['caps_ctrl_leftSquareBracket'] := "keyFunc_ctrl_leftSquareBracket"
+      keysMap['caps_ctrl_['] := "keyFunc_ctrl_leftSquareBracket"
 
       ; 右方括号( ] )
-      keysMap['caps_ctrl_rightSquareBracket'] := "keyFunc_ctrl_rightSquareBracket"
+      keysMap['caps_ctrl_]'] := "keyFunc_ctrl_rightSquareBracket"
 
       ; 反斜杠( \ )
-      keysMap['caps_ctrl_backslash'] := "keyFunc_ctrl_backslash"
+      keysMap['caps_ctrl_\'] := "keyFunc_ctrl_backslash"
 
       ; 分号( ; )
-      keysMap['caps_ctrl_semicolon'] := "keyFunc_ctrl_semicolon"
+      keysMap['caps_ctrl_;'] := "keyFunc_ctrl_semicolon"
 
       ; 单引号('')
-      keysMap['caps_ctrl_quote'] := "keyFunc_ctrl_quote"
+      keysMap["caps_ctrl_'"] := "keyFunc_ctrl_quote"
 
       ; ( Enter )
       keysMap['caps_ctrl_enter'] := "keyFunc_ctrl_enter"
 
       ; 逗号( , )
-      keysMap['caps_ctrl_comma'] := "keyFunc_ctrl_comma"
+      keysMap['caps_ctrl_,'] := "keyFunc_ctrl_comma"
 
       ; 句号( 。 )
-      keysMap['caps_ctrl_dot'] := "keyFunc_ctrl_dot"
+      keysMap['caps_ctrl_.'] := "keyFunc_ctrl_dot"
 
       ; 斜杠( / )
-      keysMap['caps_ctrl_slash'] := "keyFunc_ctrl_slash"
+      keysMap['caps_ctrl_/'] := "keyFunc_ctrl_slash"
 
       ; 空格( Space )
       keysMap['caps_ctrl_space'] := "keyFunc_ctrl_space"
@@ -506,19 +506,19 @@ keysMap := Map()
   ; =========   鼠标操作 ... 开始
   {
       ; 鼠标滚轮向前
-      keysMap['caps_ctrl_wheelUp'] := "keyFunc_ctrl_wheelUp"
+      keysMap['caps_ctrl_wheelup'] := "keyFunc_ctrl_wheelUp"
 
       ; 鼠标滚轮向前
-      keysMap['caps_ctrl_wheelDown'] := "keyFunc_ctrl_wheelDown"
+      keysMap['caps_ctrl_wheeldown'] := "keyFunc_ctrl_wheelDown"
 
       ; 鼠标中键
-      keysMap['caps_ctrl_midButton'] := "keyFunc_ctrl_midButton"
+      keysMap['caps_ctrl_mbutton'] := "keyFunc_ctrl_midButton"
 
       ; 鼠标左键
-      keysMap['caps_ctrl_leftButton'] := "keyFunc_ctrl_leftButton"
+      keysMap['caps_ctrl_lbutton'] := "keyFunc_ctrl_leftButton"
 
       ; 鼠标右键
-      keysMap['caps_ctrl_rightButton'] := "keyFunc_ctrl_rightButton"
+      keysMap['caps_ctrl_rbutton'] := "keyFunc_ctrl_rightButton"
   }
 }
 
@@ -587,13 +587,13 @@ keysMap := Map()
     ; =========   其他符号 ... 开始
     {
         ; 反引号( ` )
-        keysMap['caps_win_backquote'] := "keyFunc_win_backquote"
+        keysMap['caps_win_``'] := "keyFunc_win_backquote"
 
         ; 减号( - )
-        keysMap['caps_win_minus'] := "keyFunc_win_minus"
+        keysMap['caps_win_-'] := "keyFunc_win_minus"
 
         ; 等于号（ = ）
-        keysMap['caps_win_equal'] := "keyFunc_win_equal"
+        keysMap['caps_win_='] := "keyFunc_win_equal"
 
         ; ( Backspace )
         keysMap['caps_win_backspace'] := "keyFunc_win_backspace"
@@ -602,31 +602,31 @@ keysMap := Map()
         keysMap['caps_win_tab'] := "keyFunc_win_tab"
 
         ; 左方括号( [ )
-        keysMap['caps_win_leftSquareBracket'] := "keyFunc_win_leftSquareBracket"
+        keysMap['caps_win_['] := "keyFunc_win_leftSquareBracket"
 
         ; 右方括号( ] )
-        keysMap['caps_win_rightSquareBracket'] := "keyFunc_win_rightSquareBracket"
+        keysMap['caps_win_]'] := "keyFunc_win_rightSquareBracket"
 
         ; 反斜杠( \ )
-        keysMap['caps_win_backslash'] := "keyFunc_win_backslash"
+        keysMap['caps_win_\'] := "keyFunc_win_backslash"
 
         ; 分号( ; )
-        keysMap['caps_win_semicolon'] := "keyFunc_win_semicolon"
+        keysMap['caps_win_;'] := "keyFunc_win_semicolon"
 
         ; 单引号('')
-        keysMap['caps_win_quote'] := "keyFunc_win_quote"
+        keysMap["caps_win_'"] := "keyFunc_win_quote"
 
         ; ( Enter )
         keysMap['caps_win_enter'] := "keyFunc_win_enter"
 
         ; 逗号( , )
-        keysMap['caps_win_comma'] := "keyFunc_win_comma"
+        keysMap['caps_win_,'] := "keyFunc_win_comma"
 
         ; 句号( 。 )
-        keysMap['caps_win_dot'] := "keyFunc_win_dot"
+        keysMap['caps_win_.'] := "keyFunc_win_dot"
 
         ; 斜杠( / )
-        keysMap['caps_win_slash'] := "keyFunc_win_slash"
+        keysMap['caps_win_/'] := "keyFunc_win_slash"
 
         ; 空格( Space )
         keysMap['caps_win_space'] := "keyFunc_win_space"
@@ -635,18 +635,18 @@ keysMap := Map()
     ; =========   鼠标操作 ... 开始
     {
         ; 鼠标滚轮向前
-        keysMap['caps_win_wheelUp'] := "keyFunc_win_wheelUp"
+        keysMap['caps_win_wheelup'] := "keyFunc_win_wheelUp"
 
         ; 鼠标滚轮向前
-        keysMap['caps_win_wheelDown'] := "keyFunc_win_wheelDown"
+        keysMap['caps_win_wheeldown'] := "keyFunc_win_wheelDown"
 
         ; 鼠标中键
-        keysMap['caps_win_midButton'] := "keyFunc_win_midButton"
+        keysMap['caps_win_mbutton'] := "keyFunc_win_midButton"
 
         ; 鼠标左键
-        keysMap['caps_win_leftButton'] := "keyFunc_win_leftButton"
+        keysMap['caps_win_lbutton'] := "keyFunc_win_leftButton"
 
         ; 鼠标右键
-        keysMap['caps_win_rightButton'] := "keyFunc_win_rightButton"
+        keysMap['caps_win_rbutton'] := "keyFunc_win_rightButton"
     }
 }

@@ -20,335 +20,74 @@ CapsLock:: {
     funcLogic_capsSwitch()
 }
 
-/** CapsLock 热键 */
-#HotIf GetKeyState('CapsLock', 'P')
+;* 所有热键
+allKeys := [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
+    "``", "-", "=", "[", "]", "\", ";", "'", "<", ">", ",", ".", "/",
+    "Escape", "Tab", "Enter", "Space", "Backspace",
+    "MButton", "LButton", "RButton", "WheelUp", "WheelDown",
+    "NumLock", "Numpad0", "Numpad1", "Numpad2", "Numpad3", "Numpad4", "Numpad5", "Numpad6", "Numpad7", "Numpad8", "Numpad9",
+    "NumpadAdd", "NumpadSub", "NumpadMult", "NumpadDiv", "NumpadEnter", "NumpadDot"
+    ; "Home", "End", "PgUp", "PgDn", "Up", "Down", "Left", "Right", "Delete", "Insert", "PrintScreen", "ScrollLock", "Pause", "AppsKey",
+    ; "LShift", "RShift", "LControl", "RControl", "LAlt", "RAlt",
+]
 
-; ================= CapsLock + Key ... 开始 =================
-; =========   A ~ Z ... 开始
-a::
-b::
-c::
-d::
-e::
-f::
-g::
-h::
-i::
-j::
-k::
-l::
-m::
-n::
-o::
-p::
-q::
-r::
-s::
-t::
-u::
-v::
-w::
-x::
-y::
-z::
-; =========   F1 ~ F12 ... 开始
-f1::
-f2::
-f3::
-f4::
-f5::
-f6::
-f7::
-f8::
-f9::
-f10::
-f11::
-f12::
-; =========   0 ~ 9 ... 开始
-0::
-1::
-2::
-3::
-4::
-5::
-6::
-7::
-8::
-9::
-{
-    funName := keysMap['caps_' A_ThisHotkey]
-    %funName%()
+;! CapsLock 热键绑定
+HotIf((*) => GetKeyState('CapsLock', 'P'))
+for key in allKeys {
+    ; ; ================= CapsLock + Key ... 绑定 =================
+    Hotkey("$" key, callbackA)
+    callbackA(HotkeyName) {
+        RegExMatch(HotkeyName, '[^$]+?$', &hotKey)
+        funName := keysMap.Get(StrLower('caps_' hotKey[]), '')
+        OutputDebug(hotKey[] ':触发' funName)
+        try {
+            %funName%()
+        } catch as e {
+            OutputDebug(e.Message)
+        }
+    }
+
+    ; ================= CapsLock + Alt + Key ... 绑定 =================
+    Hotkey('$!' key, callbackB)
+    callbackB(HotkeyName) {
+        RegExMatch(HotkeyName, '(?<=\!)[^!]+?$', &hotKey)
+        funName := keysMap.Get(StrLower('caps_alt_' hotKey[]), '')
+        OutputDebug(hotKey[] ':触发(alt)' funName)
+        try {
+            %funName%()
+        } catch as e {
+            OutputDebug(e.Message)
+        }
+    }
+
+    ; ================= CapsLock + Shift + Key ... 绑定 =================
+    Hotkey('$+' key, callbackC)
+    callbackC(HotkeyName) {
+        RegExMatch(HotkeyName, '(?<=\+)[^+]+?$', &hotKey)
+        funName := keysMap.Get(StrLower('caps_shift_' hotKey[]), '')
+        OutputDebug(hotKey[] ':触发(shift)' funName)
+        try {
+            %funName%()
+        } catch as e {
+            OutputDebug(e.Message)
+        }
+    }
+
+    ; ================= CapsLock + Win + Key ... 绑定 =================
+    Hotkey('$#' key, callbackD)
+    callbackD(HotkeyName) {
+        RegExMatch(HotkeyName, '(?<=\#)[^#]+?$', &hotKey)
+        funName := keysMap.Get(StrLower('caps_win_' hotKey[]), '')
+        OutputDebug(hotKey[] ':触发(win)' funName)
+        try {
+            %funName%()
+        } catch as e {
+            OutputDebug(e.Message)
+        }
+    }
 }
-
-; =========   其他符号 ... 开始
-`:: %keysMap['caps_backquote']%()
--:: %keysMap['caps_minus']%()
-=:: %keysMap['caps_equal']%()
-BackSpace:: %keysMap['caps_backspace']%()
-Tab:: %keysMap['caps_tab']%()
-[:: %keysMap['caps_leftSquareBracket']%()
-]:: %keysMap['caps_rightSquareBracket']%()
-\:: %keysMap['caps_backslash']%()
-`;:: %keysMap['caps_semicolon']%()
-':: %keysMap['caps_quote']%()
-Enter:: %keysMap['caps_enter']%()
-,:: %keysMap['caps_comma']%()
-.:: %keysMap['caps_dot']%()
-/:: %keysMap['caps_slash']%()
-Space:: %keysMap['caps_space']%()
-
-; =========   鼠标操作 ... 开始
-WheelUp:: %keysMap['caps_wheelUp']%()
-WheelDown:: %keysMap['caps_wheelDown']%()
-MButton:: %keysMap['caps_midButton']%()
-LButton:: %keysMap['caps_leftButton']%()
-RButton:: %keysMap['caps_rightButton']%()
-
-; ================= CapsLock + Alt + Key ... 开始 =================
-; =========   A ~ Z ... 开始
-$!a::
-$!b::
-$!c::
-$!d::
-$!e::
-$!f::
-$!g::
-$!h::
-$!i::
-$!j::
-$!k::
-$!l::
-$!m::
-$!n::
-$!o::
-$!p::
-$!q::
-$!r::
-$!s::
-$!t::
-$!u::
-$!v::
-$!w::
-$!x::
-$!y::
-$!z::
-; =========   F1 ~ F12 ... 开始
-!f1::
-!f2::
-!f3::
-!f4::
-!f5::
-!f6::
-!f7::
-!f8::
-!f9::
-!f10::
-!f11::
-!f12::
-; =========   0 ~ 9 ... 开始
-!0::
-!1::
-!2::
-!3::
-!4::
-!5::
-!6::
-!7::
-!8::
-!9::
-{
-    RegExMatch(A_ThisHotkey, '(?<=\!)[^!]+?$', &hotKey)
-    funName := keysMap['caps_alt_' hotKey[]]
-    %funName%()
-}
-
-; =========   其他符号 ... 开始
-!`:: %keysMap['caps_alt_backquote']%()
-!-:: %keysMap['caps_alt_minus']%()
-!=:: %keysMap['caps_alt_equal']%()
-!BackSpace:: %keysMap['caps_alt_backspace']%()
-!Tab:: %keysMap['caps_alt_tab']%()
-![:: %keysMap['caps_alt_leftSquareBracket']%()
-!]:: %keysMap['caps_alt_rightSquareBracket']%()
-!\:: %keysMap['caps_alt_backslash']%()
-!`;:: %keysMap['caps_alt_semicolon']%()
-!':: %keysMap['caps_alt_quote']%()
-!Enter:: %keysMap['caps_alt_enter']%()
-!,:: %keysMap['caps_alt_comma']%()
-!.:: %keysMap['caps_alt_dot']%()
-!/:: %keysMap['caps_alt_slash']%()
-!Space:: %keysMap['caps_alt_space']%()
-
-; =========   鼠标操作 ... 开始
-!WheelUp:: %keysMap['caps_alt_wheelUp']%()
-!WheelDown:: %keysMap['caps_alt_wheelDown']%()
-!MButton:: %keysMap['caps_alt_midButton']%()
-!LButton:: %keysMap['caps_alt_leftButton']%()
-!RButton:: %keysMap['caps_alt_rightButton']%()
-
-; ================= CapsLock + Shift + Key ... 开始 =================
-; =========   A ~ Z ... 开始
-+a::
-+b::
-+c::
-+d::
-+e::
-+f::
-+g::
-+h::
-+i::
-+j::
-+k::
-+l::
-+m::
-+n::
-+o::
-+p::
-+q::
-+r::
-+s::
-+t::
-+u::
-+v::
-+w::
-+x::
-+y::
-+z::
-; =========   F1 ~ F12 ... 开始
-+f1::
-+f2::
-+f3::
-+f4::
-+f5::
-+f6::
-+f7::
-+f8::
-+f9::
-+f10::
-+f11::
-+f12::
-; =========   0 ~ 9 ... 开始
-+0::
-+1::
-+2::
-+3::
-+4::
-+5::
-+6::
-+7::
-+8::
-+9::
-{
-    RegExMatch(A_ThisHotkey, '(?<=\+)[^+]+?$', &hotKey)
-    funName := keysMap['caps_shift_' hotKey[]]
-    %funName%()
-}
-
-; =========   其他符号 ... 开始
-+`:: %keysMap['caps_shift_backquote']%()
-+-:: %keysMap['caps_shift_minus']%()
-+=:: %keysMap['caps_shift_equal']%()
-+BackSpace:: %keysMap['caps_shift_backspace']%()
-+Tab:: %keysMap['caps_shift_tab']%()
-+[:: %keysMap['caps_shift_leftSquareBracket']%()
-+]:: %keysMap['caps_shift_rightSquareBracket']%()
-+\:: %keysMap['caps_shift_backslash']%()
-+`;:: %keysMap['caps_shift_semicolon']%()
-+':: %keysMap['caps_shift_quote']%()
-+Enter:: %keysMap['caps_shift_enter']%()
-+,:: %keysMap['caps_shift_comma']%()
-+.:: %keysMap['caps_shift_dot']%()
-+/:: %keysMap['caps_shift_slash']%()
-+Space:: %keysMap['caps_shift_space']%()
-
-; =========   鼠标操作 ... 开始
-+WheelUp:: %keysMap['caps_shift_wheelUp']%()
-+WheelDown:: %keysMap['caps_shift_wheelDown']%()
-+MButton:: %keysMap['caps_shift_midButton']%()
-+LButton:: %keysMap['caps_shift_leftButton']%()
-+RButton:: %keysMap['caps_shift_rightButton']%()
-
-; ================= CapsLock + Win + Key ... 开始 =================
-; =========   A ~ Z ... 开始
-#a::
-#b::
-#c::
-#d::
-#e::
-#f::
-#g::
-#h::
-#i::
-#j::
-#k::
-#l::
-#m::
-#n::
-#o::
-#p::
-#q::
-#r::
-#s::
-#t::
-#u::
-#v::
-#w::
-#x::
-#y::
-#z::
-; =========   F1 ~ F12 ... 开始
-#f1::
-#f2::
-#f3::
-#f4::
-#f5::
-#f6::
-#f7::
-#f8::
-#f9::
-#f10::
-#f11::
-#f12::
-; =========   0 ~ 9 ... 开始
-#0::
-#1::
-#2::
-#3::
-#4::
-#5::
-#6::
-#7::
-#8::
-#9::
-{
-    hotKey := StrReplace(A_ThisHotkey, '#')
-    RegExMatch(A_ThisHotkey, '(?<=\#)[^#]+?$', &hotKey)
-    funName := keysMap['caps_win_' hotKey[]]
-    %funName%()
-}
-
-; =========   其他符号 ... 开始
-#`:: %keysMap['caps_win_backquote']%()
-#-:: %keysMap['caps_win_minus']%()
-#=:: %keysMap['caps_win_equal']%()
-#BackSpace:: %keysMap['caps_win_backspace']%()
-#Tab:: %keysMap['caps_win_tab']%()
-#[:: %keysMap['caps_win_leftSquareBracket']%()
-#]:: %keysMap['caps_win_rightSquareBracket']%()
-#\:: %keysMap['caps_win_backslash']%()
-#`;:: %keysMap['caps_win_semicolon']%()
-#':: %keysMap['caps_win_quote']%()
-#Enter:: %keysMap['caps_win_enter']%()
-#,:: %keysMap['caps_win_comma']%()
-#.:: %keysMap['caps_win_dot']%()
-#/:: %keysMap['caps_win_slash']%()
-#Space:: %keysMap['caps_win_space']%()
-
-; =========   鼠标操作 ... 开始
-#WheelUp:: %keysMap['caps_win_wheelUp']%()
-#WheelDown:: %keysMap['caps_win_wheelDown']%()
-#MButton:: %keysMap['caps_win_midButton']%()
-#LButton:: %keysMap['caps_win_leftButton']%()
-#RButton:: %keysMap['caps_win_rightButton']%()
-
-#HotIf
+HotIf()
