@@ -2,7 +2,7 @@
 
 ;! 提示窗口
 class UITips {
-    gui := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale')
+    gui := Gui('+AlwaysOnTop -Caption +ToolWindow')
     open := false
     /**
      * @param content 要展示的内容

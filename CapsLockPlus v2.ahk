@@ -32,7 +32,7 @@ BindingHotkey()
 ;! CapsLock 热键绑定
 BindingHotkey() {
     global allKeys, keysMap
-    HotIf((*) => GetKeyState('CapsLock', 'P'))
+    HotIf(CapsCondition)
     for key in allKeys {
         ;! CapsLock + Key ... 绑定
         Hotkey("$" key, callbackA)
@@ -44,7 +44,7 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(hotKey[] ':触发' fn.Name ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发' (fn ? fn.Name : '') ' 执行错误！')
             }
         }
 
@@ -58,7 +58,7 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(hotKey[] ':触发(alt)' fn.Name ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发(alt)' (fn ? fn.Name : '') ' 执行错误！')
             }
         }
 
@@ -72,7 +72,7 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(hotKey[] ':触发(shift)' fn.Name ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发(shift)' (fn ? fn.Name : '') ' 执行错误！')
             }
         }
 
@@ -86,7 +86,7 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(hotKey[] ':触发(win)' fn.Name ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发(win)' (fn ? fn.Name : '') ' 执行错误！')
             }
         }
     }

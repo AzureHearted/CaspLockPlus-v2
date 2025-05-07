@@ -93,3 +93,18 @@ CenterWindow(WinTitle := 'A') {
     ; 移动窗口
     return WinMove(cx, cy, , , WinTitle)
 }
+
+/**
+ * ! 判断一个字符串中是否包含数组中的任意一项
+ * @param {String} targetStr 测试字符串
+ * @param {Array} patterns 字符串数组
+ * @param {Integer} CaseSense 是否区分大小写 (默认不区分大小写)
+ * @returns {Integer} 测试结果
+ */
+StrIncludesAny(targetStr, patterns, CaseSense := 0) {
+    for (item in patterns) {
+        if InStr(StrLower(targetStr), StrLower(item), CaseSense)
+            return true
+    }
+    return false
+}

@@ -18,7 +18,7 @@ class UISetting {
         ; 按住CapsLock显示提示窗口的触发延时
         this.gui.AddText('r1', '长按Caps键')
         this.gui.AddEdit('r1 w50 x+2 yp-4 r1')
-        this.holdCapsLockShowTipsDelayUpDown := this.gui.AddUpDown("Range0-5000 0x80 vHoldCapsLockShowTipsDelay", 1500)
+        this.holdCapsLockShowTipsDelayUpDown := this.gui.AddUpDown("Range100-5000 0x80 vHoldCapsLockShowTipsDelay", 1500)
         this.gui.AddText('r1 x+4 yp+4', 'ms后回显提示')
 
         ; 按钮

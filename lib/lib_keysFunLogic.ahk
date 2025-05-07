@@ -13,53 +13,49 @@ funcLogic_capsSwitch() {
 ;! CapsLock 按住逻辑
 funcLogic_capsHold() {
     global CapsLockHold, UserConfig, UISets
-    static timer := A_TickCount
 
     if (CapsLockHold) {
-        ; 如果按住了就退出
         return
     }
-    else {
-        ; 如果是首次按住则重置时间戳
-        timer := A_TickCount
-    }
+
     CapsLockHold := true
+    mouseButtons := ["MButton", "LButton", "RButton", "WheelUp", "WheelDown"]
     ; OutputDebug('-----开始计时-----' A_TickCount - timer)
-    SetTimer(handle, 50)
-    handle(*) {
-        ; OutputDebug('CapsLock的按下状态：' GetKeyState('CapsLock', 'P') '`nA_ThisHotkey：' A_ThisHotkey '`nA_PriorHotkey：' A_PriorHotkey)
-        if (GetKeyState('CapsLock', 'P') && A_ThisHotkey == "CapsLock") {
-            ; OutputDebug('时间差：' A_TickCount - timer)
-            if (A_TickCount - timer >= UserConfig.HoldCapsLockShowTipsDelay) {
-                if (!UISets.hotTips.open) {
-                    ; OutputDebug('-----显示提示-----' A_TickCount - timer)
-                    ; 读取绑定的窗口信息
-                    bindingKeys := StrSplit(IniRead('winsInfosRecorder.ini', , , ''), '`n')
-                    ; OutputDebug(bindingKeys.Length)
-                    ; 清空原本展示的内容
-                    UISets.hotTips.ClearTips()
-                    tipsMsg := ''
-                    ; 添加新的内容
-                    for (key in bindingKeys) {
-                        ahk_exe := IniRead('winsInfosRecorder.ini', key, 'ahk_exe', '未知程序名')
-                        tipsMsg .= key ":`t" ahk_exe "`n"
-                        UISets.hotTips.AddTipItem(key, ahk_exe)
-                    }
-                    OutputDebug(tipsMsg)
-                    UISets.hotTips.ChangeContent(tipsMsg)
-                }
-                UISets.hotTips.Show()
-            }
-        } else {
-            SetTimer(handle, 0)
-            ; OutputDebug('计时器已经移除')
-            CapsLockHold := false
-            UISets.hotTips.Close()
-            ; OutputDebug('-----隐藏提示-----')
-            timer := A_TickCount
+    while (GetKeyState('CapsLock', 'P') && (A_ThisHotkey == "CapsLock" || StrIncludesAny(A_ThisHotkey, mouseButtons))) {
+        if (UISets.hotTips.open) {
+            Sleep(50)
+            continue
         }
 
+        ; OutputDebug('时间差：' A_TimeSinceThisHotkey '`tA_ThisHotkey:' A_ThisHotkey '`t' A_TimeSincePriorHotkey '`t' A_TimeSinceThisHotkey ' >=? ' UserConfig.HoldCapsLockShowTipsDelay)
+        if (A_TimeSinceThisHotkey >= UserConfig.HoldCapsLockShowTipsDelay) {
+            if (!UISets.hotTips.open) {
+                ; OutputDebug('-----显示提示-----' A_TickCount - timer)
+                ; 读取绑定的窗口信息
+                bindingKeys := StrSplit(IniRead('winsInfosRecorder.ini', , , ''), '`n')
+                ; OutputDebug(bindingKeys.Length)
+                ; 清空原本展示的内容
+                UISets.hotTips.ClearTips()
+                tipsMsg := ''
+                ; 添加新的内容
+                for (key in bindingKeys) {
+                    ahk_exe := IniRead('winsInfosRecorder.ini', key, 'ahk_exe', '未知程序名')
+                    tipsMsg .= key ":`t" ahk_exe "`n"
+                    UISets.hotTips.AddTipItem(key, ahk_exe)
+                }
+                OutputDebug(tipsMsg)
+                UISets.hotTips.ChangeContent(tipsMsg)
+            }
+            ; OutputDebug('-----显示提示-----')
+            UISets.hotTips.Show()
+        }
+        Sleep(50)
     }
+
+    UISets.hotTips.Close()
+    KeyWait('CapsLock')
+    OutputDebug('-----隐藏提示-----')
+    CapsLockHold := false
 }
 
 ; 删除当前行
