@@ -14,9 +14,16 @@ class UISetting {
 
         ; 开机自启
         this.autoStartCheckBox := this.gui.AddCheckbox('r1.5 vAutoStart', '开机启动')
+
+        ; 按住CapsLock显示提示窗口的触发延时
+        this.gui.AddText('r1', '长按Caps键')
+        this.gui.AddEdit('r1 w50 x+2 yp-4 r1')
+        this.holdCapsLockShowTipsDelayUpDown := this.gui.AddUpDown("Range0-5000 0x80 vHoldCapsLockShowTipsDelay", 1500)
+        this.gui.AddText('r1 x+4 yp+4', 'ms后回显提示')
+
         ; 按钮
         this.gui.AddButton('r1', '保存(&S)').OnEvent('Click', (*) => this.Save())
-        this.gui.AddButton('+x+5', '关闭').OnEvent('Click', (*) => this.Close())
+        this.gui.AddButton('x+5', '关闭').OnEvent('Click', (*) => this.Close())
 
         ; 绑定事件
     }
@@ -25,6 +32,7 @@ class UISetting {
     Load() {
         ; 从ini中读取变量
         this.autoStartCheckBox.Value := IniRead(this.iniPath, 'General', 'AutoStart', 0)
+        this.holdCapsLockShowTipsDelayUpDown.Value := IniRead(this.iniPath, 'General', 'HoldCapsLockShowTipsDelay', 1500)
     }
 
     ; 显示窗口
@@ -38,11 +46,6 @@ class UISetting {
 
         ; 显示窗口
         this.gui.Show('AutoSize Center')
-        ; WinGetPos(&x, &y, &w, &y, this.gui)
-        ; 计算屏幕中心位置
-        ; cx := (A_ScreenWidth - w) / 2
-        ; cy := (A_ScreenHeight - y) / 2
-        ; this.gui.Move(cx, cy)
         this.gui.OnEvent('Close', (*) => (this.open := false))
     }
 
@@ -50,6 +53,7 @@ class UISetting {
     Save() {
         OutputDebug('设置保存')
         IniWrite(this.autoStartCheckBox.Value, this.iniPath, 'General', 'AutoStart')
+        IniWrite(this.holdCapsLockShowTipsDelayUpDown.Value, this.iniPath, 'General', 'HoldCapsLockShowTipsDelay')
         ;! 检测并修复配置生效状态
         CheckAndFixSettingsStatus()
         this.Close()

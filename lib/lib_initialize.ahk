@@ -24,6 +24,13 @@ if (!A_IsAdmin) {
     }
 }
 
+
+; 按下 CapsLock 后触发 CapsLock 按下事件
+Hotkey('CapsLock', (*) => funcLogic_capsHold())
+
+; 通过 Shift + CapsLock 触发切换CapsLock
+Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
+
 ; 用户设置的ini路径
 SettingIniPath := 'settings.ini'
 ; Caps 开关标识符
@@ -47,6 +54,7 @@ UISets := {
 
 ;! 初始化
 Init() {
+    global UserHotStr
     ;* 装载图标
     LoadIcon()
 
@@ -99,6 +107,7 @@ LoadConfig() {
 
 ;* 检测并修复配置生效状态
 CheckAndFixSettingsStatus() {
+    global SettingIniPath, UserConfig
     ;? 判断是否开机自启动
     isAutoStart := IniRead(SettingIniPath, 'General', 'AutoStart', false)
     autostartLnk := A_StartupCommon . "\CapsLockPlus v2.lnk"
@@ -118,4 +127,7 @@ CheckAndFixSettingsStatus() {
             FileDelete(autostartLnk)
         }
     }
+
+    ;? 从settings.ini中更新 HoldCapsLockShowTipsDelay
+    UserConfig.HoldCapsLockShowTipsDelay := IniRead(SettingIniPath, 'General', 'HoldCapsLockShowTipsDelay', 1500)
 }

@@ -10,12 +10,6 @@
 ;todo 初始化
 Init()
 
-; 按下 CapsLock 后触发 CapsLock 按下事件
-Hotkey('CapsLock', (*) => funcLogic_capsHold())
-
-; 通过 Shift + CapsLock 触发切换CapsLock
-Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
-
 ;* 按键列表
 allKeys := [
     "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
