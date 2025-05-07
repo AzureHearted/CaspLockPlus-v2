@@ -50,8 +50,11 @@ Init() {
     ;* 装载图标
     LoadIcon()
 
-    ;* 初始化设置
+    ;* 初始化配置
     InitSetting()
+
+    ;* 检测并修复配置生效状态
+    CheckAndFixSettingsStatus()
 
     ;* 开启用户则字符串
     UserHotStr.Enable()
@@ -92,4 +95,27 @@ LoadIcon() {
 LoadConfig() {
     global SettingIniPath, UserConfig
     UserConfig.HoldCapsLockShowTipsDelay := IniRead(SettingIniPath, 'General', 'HoldCapsLockShowTipsDelay', 1500)
+}
+
+;* 检测并修复配置生效状态
+CheckAndFixSettingsStatus() {
+    ;? 判断是否开机自启动
+    isAutoStart := IniRead(SettingIniPath, 'General', 'AutoStart', false)
+    autostartLnk := A_StartupCommon . "\CapsLockPlus v2.lnk"
+    if (isAutoStart) {
+        ; 如果开启开机自启动
+        if (FileExist(autostartLnk))
+        {
+            FileGetShortcut(autostartLnk, &lnkTarget)
+            if (lnkTarget != A_ScriptFullPath)
+                FileCreateShortcut(A_ScriptFullPath, autostartLnk, A_WorkingDir)
+        } else {
+            FileCreateShortcut(A_ScriptFullPath, autostartLnk, A_WorkingDir)
+        }
+    } else {
+        if (FileExist(autostartLnk))
+        {
+            FileDelete(autostartLnk)
+        }
+    }
 }

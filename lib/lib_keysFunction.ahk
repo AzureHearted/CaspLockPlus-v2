@@ -6,6 +6,8 @@
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
 
+; 每个按键初始的默认事件
+
 ; ================= CapsLock + Key ... 开始 =================
 {
     ; =========   A ~ Z ... 开始

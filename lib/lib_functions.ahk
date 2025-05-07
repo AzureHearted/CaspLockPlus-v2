@@ -76,3 +76,20 @@ GetSelectedExplorerItemsPaths() {
     }
     return paths
 }
+
+/**
+ * ! 居中显示窗口
+ * @param {String} WinTitle 'ahk_exe '|'ahk_class '|'ahk_id '|'ahk_pid '|'ahk_group '
+ */
+CenterWindow(WinTitle := 'A') {
+    ; 获取窗口位置和大小
+    if (!WinExist(WinTitle))
+        return
+
+    WinGetPos(&x, &y, &w, &h, WinTitle)
+    ; 计算屏幕中心位置
+    cx := (A_ScreenWidth - w) / 2
+    cy := (A_ScreenHeight - y) / 2
+    ; 移动窗口
+    return WinMove(cx, cy, , , WinTitle)
+}

@@ -8,7 +8,7 @@
       "type": "ahk2",
       "request": "launch",
       "name": "v2版本调试",
-      "program": "${workspaceFolder}/main.ahk",
+      "program": "${workspaceFolder}/CapsLockPlus v2.ahk",
       "stopOnEntry": true
     },
     {
