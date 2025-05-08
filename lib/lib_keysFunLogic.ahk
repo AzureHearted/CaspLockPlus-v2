@@ -14,7 +14,7 @@ funcLogic_capsSwitch() {
 funcLogic_capsHold() {
     global CapsLockHold, UserConfig, UISets
 
-    if (CapsLockHold) {
+    if (CapsLockHold || UISets.hotTips.isShow) {
         return
     }
 
@@ -22,14 +22,14 @@ funcLogic_capsHold() {
     mouseButtons := ["MButton", "LButton", "RButton", "WheelUp", "WheelDown"]
     ; OutputDebug('-----开始计时-----' A_TickCount - timer)
     while (GetKeyState('CapsLock', 'P') && (A_ThisHotkey == "CapsLock" || StrIncludesAny(A_ThisHotkey, mouseButtons))) {
-        if (UISets.hotTips.open) {
+        if (UISets.hotTips.isShow) {
             Sleep(50)
             continue
         }
 
         ; OutputDebug('时间差：' A_TimeSinceThisHotkey '`tA_ThisHotkey:' A_ThisHotkey '`t' A_TimeSincePriorHotkey '`t' A_TimeSinceThisHotkey ' >=? ' UserConfig.HoldCapsLockShowTipsDelay)
         if (A_TimeSinceThisHotkey >= UserConfig.HoldCapsLockShowTipsDelay) {
-            if (!UISets.hotTips.open) {
+            if (!UISets.hotTips.isShow) {
                 ; OutputDebug('-----显示提示-----' A_TickCount - timer)
                 ; 读取绑定的窗口信息
                 bindingKeys := StrSplit(IniRead('winsInfosRecorder.ini', , , ''), '`n')
@@ -44,16 +44,15 @@ funcLogic_capsHold() {
                     UISets.hotTips.AddTipItem(key, ahk_exe)
                 }
                 OutputDebug(tipsMsg)
-                UISets.hotTips.ChangeContent(tipsMsg)
+                UISets.hotTips.Show()
             }
             ; OutputDebug('-----显示提示-----')
-            UISets.hotTips.Show()
         }
         Sleep(50)
     }
 
-    UISets.hotTips.Close()
     KeyWait('CapsLock')
+    UISets.hotTips.Hidden()
     OutputDebug('-----隐藏提示-----')
     CapsLockHold := false
 }

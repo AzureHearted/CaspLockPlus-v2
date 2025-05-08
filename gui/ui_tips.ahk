@@ -3,7 +3,9 @@
 ;! 提示窗口
 class UITips {
     gui := Gui('+AlwaysOnTop -Caption +ToolWindow')
-    open := false
+    ; 窗口是否显示
+    isShow := false
+
     /**
      * @param content 要展示的内容
      */
@@ -15,43 +17,36 @@ class UITips {
         this.gui.SetFont('s' 10 * scale, 'Segoe UI')
         this.titleControl := this.gui.AddText('r1.2 Center', this.title)
         this.titleControl.SetFont('s' 10 * scale * 1.2 ' bold')
-        this.listViewControl := this.gui.AddListView("r8 w320 ReadOnly",defColumns)
+        this.listViewControl := this.gui.AddListView("r8 ReadOnly NoSort NoSortHdr", defColumns)
 
         ; 事件绑定
-        this.gui.OnEvent('Close', (*) => (this.open := false))
+        this.gui.OnEvent('Close', (*) => (this.isShow := false))
     }
 
     ; 显示窗口
     Show() {
-        if (this.open) ;* 防止重复显示
+        if (this.isShow) ;* 防止重复显示
             return
-        this.open := true
+        this.isShow := true
 
         this.gui.Show('NoActivate AutoSize')
-        ; this.gui.Show('w' A_ScreenWidth * 0.5 'h' A_ScreenHeight * 0.5 'NoActivate')
-        ; this.gui.Show('NoActivate AutoSize')
+        this.listViewControl.Redraw()
 
         ; 设置窗口样式
         hwnd := this.gui.Hwnd
         WinSetTransparent(200, 'ahk_id' hwnd)
     }
 
-    ; 关闭窗口
-    Close() {
-        this.open := false
+    ; 隐藏窗口
+    Hidden() {
         WinClose(this.gui)
         this.ClearTips()
     }
+
     ; 改变标题
     ChangeTitle(newTitle) {
         this.titleControl.Value := newTitle
         this.titleControl.Redraw()
-    }
-
-    ; 改变内容
-    ChangeContent(newContent) {
-        ; this.contentControl.Value := newContent
-        ; this.contentControl.Redraw()
     }
 
     ; 添加tip项
@@ -67,5 +62,9 @@ class UITips {
 
     OnClose(callback) {
         this.gui.OnEvent('Close', callback)
+    }
+
+    __Delete() {
+        this.gui.Destroy()
     }
 }

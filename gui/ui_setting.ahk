@@ -4,7 +4,8 @@
 
 class UISetting {
     gui := Gui('+AlwaysOnTop +ToolWindow', '用户设置')
-    open := false   ;窗口开启标识符
+    ;窗口显示标识符
+    isShow := false
     iniPath := ''
 
     ; 构造函数
@@ -23,9 +24,10 @@ class UISetting {
 
         ; 按钮
         this.gui.AddButton('r1', '保存(&S)').OnEvent('Click', (*) => this.Save())
-        this.gui.AddButton('x+5', '关闭').OnEvent('Click', (*) => this.Close())
+        this.gui.AddButton('x+5', '关闭').OnEvent('Click', (*) => this.Hidden())
 
         ; 绑定事件
+        this.gui.OnEvent('Close', (*) => (this.isShow := false))
     }
 
     ; 加载配置
@@ -37,16 +39,15 @@ class UISetting {
 
     ; 显示窗口
     Show() {
-        if (this.open)
+        if (this.isShow)
             return
-        this.open := true
+        this.isShow := true
 
         ; 加载配置
         this.Load()
 
         ; 显示窗口
         this.gui.Show('AutoSize Center')
-        this.gui.OnEvent('Close', (*) => (this.open := false))
     }
 
     ; 保存配置
@@ -56,16 +57,17 @@ class UISetting {
         IniWrite(this.holdCapsLockShowTipsDelayUpDown.Value, this.iniPath, 'General', 'HoldCapsLockShowTipsDelay')
         ;! 检测并修复配置生效状态
         CheckAndFixSettingsStatus()
-        this.Close()
+        this.Hidden()
     }
 
-    ; 关闭窗口
-    Close() {
+    ; 隐藏窗口
+    Hidden() {
         WinClose(this.gui)
     }
 
+
     ; 析构函数
     __Delete() {
-        this.gui := ''
+        this.gui.Destroy()
     }
 }
