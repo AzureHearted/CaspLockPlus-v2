@@ -43,7 +43,8 @@ CapsLockHold := false
 UserHotStr := UserHotString(SettingIniPath)
 ; 用户配置
 UserConfig := {
-    HoldCapsLockShowTipsDelay: 2000
+    HoldCapsLockShowTipsDelay: 2000, ; 提示窗口显示延时（ms,100 ~ 5000）
+    HotTipsTransparent: 200 ; 提示窗口的透明度（0 ~ 255）
 }
 
 ;* UI集合
@@ -83,6 +84,8 @@ InitSetting() {
         IniWrite(0, SettingIniPath, "General", 'AutoStart')
         ; 按住CapsLock后多少ms显示Tips (默认1500ms)
         IniWrite(1500, SettingIniPath, "General", 'HoldCapsLockShowTipsDelay')
+        ; 提示窗透明度
+        IniWrite(200, SettingIniPath, "General", 'HotTipsTransparent')
         ; Everything相关
         IniWrite("C:\Program Files\Everything\Everything.exe", SettingIniPath, "Everything", 'Path')
         ; 读取用户配置
@@ -132,4 +135,6 @@ CheckAndFixSettingsStatus() {
 
     ;? 从settings.ini中更新 HoldCapsLockShowTipsDelay
     UserConfig.HoldCapsLockShowTipsDelay := IniRead(SettingIniPath, 'General', 'HoldCapsLockShowTipsDelay', 1500)
+    UserConfig.HotTipsTransparent := IniRead(SettingIniPath, 'General', 'HotTipsTransparent', 200)
+    UISets.hotTips.transparent := UserConfig.HotTipsTransparent
 }

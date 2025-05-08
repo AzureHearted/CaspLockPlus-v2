@@ -51,9 +51,10 @@ funcLogic_capsHold() {
         Sleep(50)
     }
 
-    KeyWait('CapsLock')
     UISets.hotTips.Hidden()
+    KeyWait('CapsLock')
     OutputDebug('-----隐藏提示-----')
+    ; 等到CapsLock被松开才切换CapsLock键的按下标识符
     CapsLockHold := false
 }
 

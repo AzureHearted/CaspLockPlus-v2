@@ -5,6 +5,8 @@ class UITips {
     gui := Gui('+AlwaysOnTop -Caption +ToolWindow')
     ; 窗口是否显示
     isShow := false
+    ; 窗口透明度
+    transparent := 200
 
     /**
      * @param content 要展示的内容
@@ -34,7 +36,7 @@ class UITips {
 
         ; 设置窗口样式
         hwnd := this.gui.Hwnd
-        WinSetTransparent(200, 'ahk_id' hwnd)
+        WinSetTransparent(this.transparent, 'ahk_id' hwnd)
     }
 
     ; 隐藏窗口
