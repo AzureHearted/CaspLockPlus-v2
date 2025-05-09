@@ -166,8 +166,8 @@
         }
         keyFunc_f10() {
             /** WebView2浏览器 */
-            global UISets
-            UISets.webview.Show()
+            global UISets, UserConfig
+            UISets.webview.Show(UserConfig.URLDefault)
         }
         keyFunc_f11() {
 

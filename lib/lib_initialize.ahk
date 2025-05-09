@@ -44,7 +44,8 @@ UserHotStr := UserHotString(SettingIniPath)
 ; 用户配置
 UserConfig := {
     HoldCapsLockShowTipsDelay: 2000, ; 提示窗口显示延时（ms,100 ~ 5000）
-    HotTipsTransparent: 200 ; 提示窗口的透明度（0 ~ 255）
+    HotTipsTransparent: 200, ; 提示窗口的透明度（0 ~ 255）
+    URLDefault: 'http://wdxt.taibiao.com.cn/'
 }
 
 ;* UI集合
