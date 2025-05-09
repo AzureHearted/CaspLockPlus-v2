@@ -21,8 +21,6 @@ class UIWebView {
         wvc := WebView2.CreateControllerAsync(this.gui.Hwnd).await2()
         wv := wvc.CoreWebView2
         wv.Navigate('http://localhost:9999/')
-        ; 事件绑定
-        this.gui.OnEvent('Close', (*) => (this.isShow := false))
     }
 
     ; 隐藏窗口

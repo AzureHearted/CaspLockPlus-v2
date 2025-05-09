@@ -13,6 +13,9 @@
     "Numpad",
     "nums",
     "runaction",
+    "SHFILEINFO",
+    "SHGFI",
+    "SMALLICON",
     "wheeldown",
     "wheelup"
   ]

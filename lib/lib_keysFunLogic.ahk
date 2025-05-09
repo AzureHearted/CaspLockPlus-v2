@@ -40,8 +40,10 @@ funcLogic_capsHold() {
                 ; 添加新的内容
                 for (key in bindingKeys) {
                     ahk_exe := IniRead('winsInfosRecorder.ini', key, 'ahk_exe', '未知程序名')
+                    path := IniRead('winsInfosRecorder.ini', key, 'path', '')
                     tipsMsg .= key ":`t" ahk_exe "`n"
-                    UISets.hotTips.AddTipItem(key, ahk_exe)
+                    iconNumber := UISets.hotTips.LoadIcon(path)
+                    UISets.hotTips.AddTipItem(iconNumber, ahk_exe, key)
                 }
                 OutputDebug(tipsMsg)
                 UISets.hotTips.Show()

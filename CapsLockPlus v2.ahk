@@ -44,11 +44,12 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(HotkeyName ':触发' (fn ? fn.Name : '') ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发 执行错误！')
             }
         }
 
         ;! CapsLock + Alt + Key ... 绑定
+
         Hotkey('$!' key, callbackB)
         callbackB(HotkeyName) {
             try {
@@ -58,7 +59,7 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(HotkeyName ':触发(alt)' (fn ? fn.Name : '') ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发(alt) 执行错误！')
             }
         }
 
@@ -72,7 +73,7 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(HotkeyName ':触发(shift)' (fn ? fn.Name : '') ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发(shift) 执行错误！')
             }
         }
 
@@ -86,7 +87,7 @@ BindingHotkey() {
                 fn()
             } catch as e {
                 OutputDebug(e.Message)
-                ShowToolTips(HotkeyName ':触发(win)' (fn ? fn.Name : '') ' 执行错误！')
+                ShowToolTips(HotkeyName ':触发(win) 执行错误！')
             }
         }
     }
