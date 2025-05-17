@@ -1,14 +1,13 @@
 #Requires AutoHotkey v2.0
 #Include <lib_functions>
 #Include <lib_userHotString>
+#Include <lib_userTips>
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
-#Include ../gui/ui_tips.ahk
 
 ; A_MaxHotkeysPerInterval和A_HotkeyInterval变量控制热键激活的速率, 超过此速率将显示警告对话框.
 A_MaxHotkeysPerInterval := 500
 A_HotkeyInterval := 0
-
 
 ;! 确保脚本以管理员身份运行 (编译前必需开启这段代码)
 if (!A_IsAdmin) {
@@ -23,7 +22,6 @@ if (!A_IsAdmin) {
         ExitApp()
     }
 }
-
 
 CapsCondition(*) => GetKeyState("CapsLock", "P")
 
@@ -51,7 +49,8 @@ UserConfig := {
 ;* UI集合
 UISets := {
     setting: UISetting('settings.ini'), ; 设置窗口
-    hotTips: UITips(, '已绑定的窗口`t', ["进程", "按键"]), ; Caps按住一段时间后的提示窗口及内容
+    ; hotTips: UITips('已绑定的窗口`t', ["进程", "按键"]), ; Caps按住一段时间后的提示窗口及内容
+    hotTips: UserTips(), ; Caps按住一段时间后的提示窗口及内容
     webview: UIWebView(),
 }
 
