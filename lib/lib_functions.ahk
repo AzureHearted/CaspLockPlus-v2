@@ -10,8 +10,12 @@ ShowToolTips(msg, duration := 1000) {
     SetTimer(() => ToolTip(), duration)
 }
 
-;获取选中的文本(无污染剪贴板)
-GetSelText() {
+/**
+ * 获取选中的文本(支持无污染剪贴板)
+ * @param {Integer} endDelay 获取完成后延时多少ms再返回结果
+ * @returns {String} 获取到的文本内容
+ */
+GetSelText(endDelay := 0) {
     ClipboardOld := ClipboardAll()
     A_Clipboard := ""
     SendInput('^{c}')
@@ -19,23 +23,25 @@ GetSelText() {
         selText := A_Clipboard
         ; 还原剪贴板📋
         A_Clipboard := ClipboardOld
+
         lastChar := SubStr(selText, StrLen(selText), 1)
         if (Ord(lastChar) != 10) ;如果最后一个字符是换行符，就认为是在IDE那复制了整行，不要这个结果
         {
             OutputDebug('获取文本成功:' . selText . '`n')
+            Sleep(endDelay)
             return selText
         } else {
             OutputDebug('未选中文本:' . '`n')
+            Sleep(endDelay)
             return
         }
-        ; return selText
     } else {
         OutputDebug("剪贴板等待超时")
+        ; 还原剪贴板📋
         A_Clipboard := ClipboardOld
+        Sleep(endDelay)
         return ""
     }
-    A_Clipboard := ClipboardOld
-    return
 }
 
 

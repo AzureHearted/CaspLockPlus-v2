@@ -93,7 +93,7 @@
             text := ''
             if (!WinActive('Quicker搜索')) {
                 ; 只有不在Quicker搜索框下才尝试获取选中文本
-                text := GetSelText()
+                text := GetSelText(100)
             }
             Run("quicker:search:" text)
         }
@@ -223,12 +223,12 @@
 
         ; 减号( - )
         keyFunc_minus() {
-
+            funcLogic_volumeDown()
         }
 
         ; 等于号（ = ）
         keyFunc_equal() {
-
+            funcLogic_volumeUp()
         }
 
         ; ( Backspace )
