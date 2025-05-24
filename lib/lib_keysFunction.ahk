@@ -90,12 +90,13 @@
         }
         keyFunc_q() {
             ; 呼出Quicker搜索框，并填入选中内容(如果有)
-            text := ''
-            if (!WinActive('Quicker搜索')) {
-                ; 只有不在Quicker搜索框下才尝试获取选中文本
-                text := GetSelText(100)
-            }
-            Run("quicker:search:" text)
+            ; text := ''
+            ; if (!WinActive('Quicker搜索')) {
+            ;     ; 只有不在Quicker搜索框下才尝试获取选中文本
+            ;     text := GetSelText(100)
+            ; }
+            ; Run("quicker:search:" text)
+            Run("quicker:search:")
         }
         keyFunc_r() {
             ; 注释当前行
