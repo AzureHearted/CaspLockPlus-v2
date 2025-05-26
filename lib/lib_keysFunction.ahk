@@ -171,7 +171,7 @@
             UISets.webview.Show(UserConfig.URLDefault)
         }
         keyFunc_f11() {
-
+            Reload()
         }
         keyFunc_f12() {
             /** 设置窗口 */
