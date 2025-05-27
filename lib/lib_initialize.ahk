@@ -25,6 +25,9 @@ if (!A_IsAdmin) {
 
 CapsCondition(*) => GetKeyState("CapsLock", "P")
 
+/** 阻止默认CapsLock事件 */
+Hotkey('*CapsLock', (*) => false)
+
 ; 按下 CapsLock 后触发 CapsLock 按下事件
 Hotkey('CapsLock', (*) => funcLogic_capsHold())
 
