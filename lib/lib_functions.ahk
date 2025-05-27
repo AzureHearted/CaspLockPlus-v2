@@ -114,3 +114,18 @@ StrIncludesAny(targetStr, patterns, CaseSense := 0) {
     }
     return false
 }
+
+
+/**
+ * ! 判断窗口是否置顶
+ * @param {Integer} hwnd 窗口id
+ */
+IsAlwaysOnTop(hwnd := 0) {
+    try {
+        exStyle := WinGetExStyle(hwnd > 0 ? ('ahk_id ' hwnd) : 'A')   ;获取扩展样式
+        return exStyle & 0x8
+    } catch as e {
+        OutputDebug('IsAlwaysOnTop错误消息:' e.Message)
+        return false
+    }
+}

@@ -32,22 +32,22 @@ Hotkey('CapsLock', (*) => funcLogic_capsHold())
 Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
 
 ; 用户设置的ini路径
-SettingIniPath := 'settings.ini'
+global SettingIniPath := 'settings.ini'
 ; Caps 开关标识符
-CapsLockOpen := GetKeyState('CapsLock', 'T') ; 记录初始CapsLock按键状态
+global CapsLockOpen := GetKeyState('CapsLock', 'T') ; 记录初始CapsLock按键状态
 ; Caps 按住时候的标识符
-CapsLockHold := false
+global CapsLockHold := false
 ; 用户热字符串控制器
-UserHotStr := UserHotString(SettingIniPath)
+global UserHotStr := UserHotString(SettingIniPath)
 ; 用户配置
-UserConfig := {
+global UserConfig := {
     HoldCapsLockShowTipsDelay: 2000, ; 提示窗口显示延时（ms,100 ~ 5000）
     HotTipsTransparent: 200, ; 提示窗口的透明度（0 ~ 255）
     URLDefault: 'http://wdxt.taibiao.com.cn/'
 }
 
 ;* UI集合
-UISets := {
+global UISets := {
     setting: UISetting('settings.ini'), ; 设置窗口
     ; hotTips: UITips('已绑定的窗口`t', ["进程", "按键"]), ; Caps按住一段时间后的提示窗口及内容
     hotTips: UserTips(), ; Caps按住一段时间后的提示窗口及内容
@@ -57,7 +57,6 @@ UISets := {
 
 ;! 初始化
 Init() {
-    global UserHotStr
     ;* 装载图标
     LoadIcon()
 
@@ -75,7 +74,6 @@ Init() {
 
 ;! 初始化设置
 InitSetting() {
-    global SettingIniPath
     /** 判断配置文件是否存在 */
     ; 如果没有检测到settings.ini则认为是首次启动
     if (!FileExist(SettingIniPath)) {
@@ -88,7 +86,8 @@ InitSetting() {
         IniWrite(200, SettingIniPath, "General", 'HotTipsTransparent')
         ; Everything相关
         IniWrite("C:\Program Files\Everything\Everything.exe", SettingIniPath, "Everything", 'Path')
-        ; 读取用户配置
+        ; 实验性功能
+        IniWrite(false, SettingIniPath, "General", 'OpenExperimentalFunction')
         ShowToolTips('首次启动~')
     }
 
@@ -106,13 +105,11 @@ LoadIcon() {
 
 ;! 读取配置
 LoadConfig() {
-    global SettingIniPath, UserConfig
     UserConfig.HoldCapsLockShowTipsDelay := IniRead(SettingIniPath, 'General', 'HoldCapsLockShowTipsDelay', 1500)
 }
 
 ;* 检测并修复配置生效状态
 CheckAndFixSettingsStatus() {
-    global SettingIniPath, UserConfig
     ;? 判断是否开机自启动
     isAutoStart := IniRead(SettingIniPath, 'General', 'AutoStart', false)
     autostartLnk := A_StartupCommon . "\CapsLockPlus v2.lnk"

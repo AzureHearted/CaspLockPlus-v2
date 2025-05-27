@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #Include <lib_functions>
+#Include <lib_controlAlwaysOnTop>
 
 ;! CapsLock 开关逻辑
 funcLogic_capsSwitch() {
@@ -159,15 +160,20 @@ funcLogic_switchSelUpperCase() {
 
 ; 置顶 / 解除置顶一个窗口
 funcLogic_winPin() {
-    _id := WinExist('A')                      ;获取当前窗口的ID
-    ; _id := WinGetID("A")                      ;获取当前窗口的句柄(ID)
-    WinSetAlwaysOnTop(-1)
-    exStyle := WinGetExStyle('A')   ;获取扩展样式
-    ; showMsg((exStyle & 0x8 ? '已置顶' : '已解除置顶') . '当前窗口：' . _id)
-    if (exStyle & 0x8) {
-        ShowToolTips('已置顶当前窗口🔝')
+    hwnd := WinExist('A')                      ;获取当前窗口的HWND
+    WinSetAlwaysOnTop(-1, 'ahk_id' hwnd)
+
+    OpenExperimentalFunction := IniRead(SettingIniPath, 'General', 'OpenExperimentalFunction', false)
+    if (IsAlwaysOnTop(hwnd)) {
+        if (OpenExperimentalFunction) {
+            AlwaysOnTopControl(hwnd)
+        } else {
+            ShowToolTips('已置顶当前窗口🔝')
+        }
     } else {
-        ShowToolTips('已解除当前窗口的置顶状态')
+        if (!OpenExperimentalFunction) {
+            ShowToolTips('已解除当前窗口的置顶状态')
+        }
     }
     return
 }
