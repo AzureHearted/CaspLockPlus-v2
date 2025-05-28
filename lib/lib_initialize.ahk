@@ -2,10 +2,10 @@
 
 ;! 在系统temp文件夹下创建依赖目录，并释放依赖文件
 DirCreate(A_Temp '\CapsLockPlus v2')
-FileInstall('lib/WebView2/32bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_32bit.dll',1)
-FileInstall('lib/WebView2/64bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_64bit.dll',1)
-FileInstall('res/CapsLockPlusIcon.ico', A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico',1)
-FileInstall('res/cancelAlwaysOnTop.ico', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.ico',1)
+FileInstall('lib/WebView2/32bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_32bit.dll', 1)
+FileInstall('lib/WebView2/64bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_64bit.dll', 1)
+FileInstall('res/CapsLockPlusIcon.ico', A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico', 1)
+FileInstall('res/cancelAlwaysOnTop.ico', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.ico', 1)
 
 
 #Include <lib_functions>
@@ -19,8 +19,8 @@ FileInstall('res/cancelAlwaysOnTop.ico', A_Temp '\CapsLockPlus v2\cancelAlwaysOn
 A_MaxHotkeysPerInterval := 500
 A_HotkeyInterval := 0
 
-;! 确保脚本以管理员身份运行 (编译前必需开启这段代码)
-if (!A_IsAdmin) {
+;! 确保编译后的exe文件以管理员身份运行
+if (A_IsCompiled && !A_IsAdmin) {
     try
     {
         ShowToolTips('检测到脚本并未以管理员身份启动，现重新已管理员身份启动')
