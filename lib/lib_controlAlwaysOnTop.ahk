@@ -5,7 +5,7 @@
  */
 class AlwaysOnTopControl {
   ; 图标路径
-  picUrl := 'res/cancelAlwaysOnTop.ico'
+  picUrl := A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.ico'
   ; 偏移量
   offsetX := -180
   offsetY := 4

@@ -1,9 +1,19 @@
 #Requires AutoHotkey v2.0
+
+;! 在系统temp文件夹下创建依赖目录，并释放依赖文件
+DirCreate(A_Temp '\CapsLockPlus v2')
+FileInstall('lib/WebView2/32bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_32bit.dll',1)
+FileInstall('lib/WebView2/64bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_64bit.dll',1)
+FileInstall('res/CapsLockPlusIcon.ico', A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico',1)
+FileInstall('res/cancelAlwaysOnTop.ico', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.ico',1)
+
+
 #Include <lib_functions>
 #Include <lib_userHotString>
 #Include <lib_userTips>
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
+
 
 ; A_MaxHotkeysPerInterval和A_HotkeyInterval变量控制热键激活的速率, 超过此速率将显示警告对话框.
 A_MaxHotkeysPerInterval := 500
@@ -100,7 +110,7 @@ InitSetting() {
 
 ;! 装载图标
 LoadIcon() {
-    CapsLockPlusIcon := './res/CapsLockPlusIcon.ico'
+    CapsLockPlusIcon := A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico'
     if FileExist(CapsLockPlusIcon) {
         TraySetIcon(CapsLockPlusIcon, 1)
     }

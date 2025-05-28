@@ -12,7 +12,8 @@ class UIWebView {
     __New() {
 
         ; WebView2加载器的路径
-        this.WebView2LoaderPath := A_LineFile '\..\bin\WebView2\' (A_PtrSize * 8) 'bit\WebView2Loader.dll'
+        ; this.WebView2LoaderPath := A_IsCompiled ? A_Temp '\WebView2Loader_' (A_PtrSize * 8) 'bit.dll' : A_LineFile '\..\lib\WebView2\' (A_PtrSize * 8) 'bit\WebView2Loader.dll'
+        this.WebView2LoaderPath := A_Temp '\CapsLockPlus v2\WebView2Loader_' (A_PtrSize * 8) 'bit.dll'
 
         ; WebView2相关对象
         this.wvc := {}
