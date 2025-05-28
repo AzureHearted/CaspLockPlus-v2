@@ -96,7 +96,13 @@
             ;     text := GetSelText(100)
             ; }
             ; Run("quicker:search:" text)
+            id := WinExist('Quicker搜索')
             Run("quicker:search:")
+            if (!id) {
+                hwnd := WinWait('Quicker搜索')
+                WinActivate('ahk_id' hwnd)
+                OutputDebug('已聚焦')
+            }
         }
         keyFunc_r() {
             ; 注释当前行
@@ -440,6 +446,10 @@
             SendInput('+{Home}')
         }
         keyFunc_alt_v() {
+            if (WinExist('ahk_exe EXCEL.EXE ahk_class XLMAIN')) {
+                ; Ctrl + Alt + V
+                SendInput('^!v')
+            }
         }
         keyFunc_alt_w() {
             ; Alt + F4 关闭软件

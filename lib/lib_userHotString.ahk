@@ -31,13 +31,12 @@ class UserHotString {
         this.hotStringMap[key] := value
       }
     }
-    OutputDebug('成功读取用户HosString')
+    OutputDebug('[用户HosString] 成功读取')
   }
 
   ; 启用用户HotString
   Enable() {
-    OutputDebug('已启用用户HotString')
-    ; ShowToolTips('已启用用户HotString')
+    OutputDebug('[用户HotString] 已启用')
     this.ControlHotString(this.hotStringMap, 'On')
   }
 

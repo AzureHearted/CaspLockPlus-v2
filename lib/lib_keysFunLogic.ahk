@@ -46,7 +46,7 @@ funcLogic_capsHold() {
                     iconNumber := UISets.hotTips.LoadIcon(path)
                     UISets.hotTips.AddTipItem(iconNumber, ahk_exe, key)
                 }
-                OutputDebug(tipsMsg)
+                ; OutputDebug(tipsMsg)
                 UISets.hotTips.Show()
             }
             ; OutputDebug('-----显示提示-----')
@@ -56,7 +56,7 @@ funcLogic_capsHold() {
 
     UISets.hotTips.Hidden()
     KeyWait('CapsLock')
-    OutputDebug('-----隐藏提示-----')
+    ; OutputDebug('-----隐藏提示-----')
     ; 等到CapsLock被松开才切换CapsLock键的按下标识符
     CapsLockHold := false
 }
