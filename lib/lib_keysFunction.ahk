@@ -446,7 +446,7 @@
             SendInput('+{Home}')
         }
         keyFunc_alt_v() {
-            if (WinExist('ahk_exe EXCEL.EXE ahk_class XLMAIN')) {
+            if (WinExist('ahk_exe EXCEL.EXE') || WinExist('ahk_exe wps.exe')) {
                 ; Ctrl + Alt + V
                 SendInput('^!v')
             }
