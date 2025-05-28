@@ -186,28 +186,28 @@
 
         }
         keyFunc_1() {
-            BindingWindow.active('1')
+            BindingWindow.Active('1')
         }
         keyFunc_2() {
-            BindingWindow.active('2')
+            BindingWindow.Active('2')
         }
         keyFunc_3() {
-            BindingWindow.active('3')
+            BindingWindow.Active('3')
         }
         keyFunc_4() {
-            BindingWindow.active('4')
+            BindingWindow.Active('4')
         }
         keyFunc_5() {
-            BindingWindow.active('5')
+            BindingWindow.Active('5')
         }
         keyFunc_6() {
-            BindingWindow.active('6')
+            BindingWindow.Active('6')
         }
         keyFunc_7() {
-            BindingWindow.active('7')
+            BindingWindow.Active('7')
         }
         keyFunc_8() {
-            BindingWindow.active('8')
+            BindingWindow.Active('8')
         }
         keyFunc_9() {
             ; 用()将所选内容括起来
@@ -219,7 +219,7 @@
     {
         ; 反引号( ` )
         keyFunc_backquote() {
-            BindingWindow.active('``')
+            BindingWindow.Active('``')
         }
 
         ; 减号( - )
@@ -498,28 +498,28 @@
         keyFunc_alt_0() {
         }
         keyFunc_alt_1() {
-            BindingWindow.binding('1')
+            BindingWindow.Binding('1')
         }
         keyFunc_alt_2() {
-            BindingWindow.binding('2')
+            BindingWindow.Binding('2')
         }
         keyFunc_alt_3() {
-            BindingWindow.binding('3')
+            BindingWindow.Binding('3')
         }
         keyFunc_alt_4() {
-            BindingWindow.binding('4')
+            BindingWindow.Binding('4')
         }
         keyFunc_alt_5() {
-            BindingWindow.binding('5')
+            BindingWindow.Binding('5')
         }
         keyFunc_alt_6() {
-            BindingWindow.binding('6')
+            BindingWindow.Binding('6')
         }
         keyFunc_alt_7() {
-            BindingWindow.binding('7')
+            BindingWindow.Binding('7')
         }
         keyFunc_alt_8() {
-            BindingWindow.binding('8')
+            BindingWindow.Binding('8')
         }
         keyFunc_alt_9() {
             ; 用中文圆括号包裹选中内容
@@ -532,7 +532,7 @@
     {
         ; 反引号( ` )
         keyFunc_alt_backquote() {
-            BindingWindow.binding('``')
+            BindingWindow.Binding('``')
         }
 
         ; 减号( - )
