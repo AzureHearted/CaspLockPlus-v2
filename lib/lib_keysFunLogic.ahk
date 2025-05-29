@@ -61,7 +61,27 @@ funcLogic_capsHold() {
     CapsLockHold := false
 }
 
-; 删除当前行
+;f 复制
+funcLogic_copy() {
+    if (WinActive('ahk_class CabinetWClass')) {
+        SendInput('^{Insert}')
+
+    } else {
+        SendInput('^c')
+    }
+
+}
+
+;f 粘贴
+funcLogic_paste() {
+    if (WinActive('ahk_class CabinetWClass')) {
+        SendInput('+{Insert}')
+    } else {
+        SendInput('^v')
+    }
+}
+
+;f 删除当前行
 funcLogic_deleteLine() {
     ClipboardOld := ClipboardAll()
     loop (3) {
@@ -80,7 +100,7 @@ funcLogic_deleteLine() {
     A_Clipboard := ClipboardOld
 }
 
-; 复制当前行到下一行
+;f 复制当前行到下一行
 funcLogic_copyLineDown() {
     ShowToolTips('复制当前行到下一行')
     tmpClipboard := ClipboardAll()
@@ -93,7 +113,7 @@ funcLogic_copyLineDown() {
     return
 }
 
-; 复制当前行到上一行
+;f 复制当前行到上一行
 funcLogic_CopyLineUp() {
     ShowToolTips('复制当前行到上一行')
     tmpClipboard := ClipboardAll()
@@ -106,7 +126,7 @@ funcLogic_CopyLineUp() {
     return
 }
 
-; 选择的内容用括号括起来
+;f 选择的内容用括号括起来
 funcLogic_doubleChar(char1, char2 := "") {
     if (char2 == "") {
         char2 := char1
@@ -128,7 +148,7 @@ funcLogic_doubleChar(char1, char2 := "") {
     return
 }
 
-; 选中文字切换为小写
+;f 选中文字切换为小写
 funcLogic_switchSelLowerCase() {
     ClipboardOld := ClipboardAll()
     resText := StrLower(GetSelText())
@@ -143,7 +163,7 @@ funcLogic_switchSelLowerCase() {
     return
 }
 
-; 选中文字切换为大写
+;f 选中文字切换为大写
 funcLogic_switchSelUpperCase() {
     ClipboardOld := ClipboardAll()
     resText := StrUpper(GetSelText())
@@ -158,7 +178,7 @@ funcLogic_switchSelUpperCase() {
     return
 }
 
-; 置顶 / 解除置顶一个窗口
+;f 置顶 / 解除置顶一个窗口
 funcLogic_winPin() {
     hwnd := WinExist('A')                      ;获取当前窗口的HWND
     WinSetAlwaysOnTop(-1, 'ahk_id' hwnd)
@@ -178,13 +198,13 @@ funcLogic_winPin() {
     return
 }
 
-; 系统音量增加
+;f 系统音量增加
 funcLogic_volumeUp() {
     SendInput('{Volume_Up}')
     return
 }
 
-; 系统音量减少
+;f 系统音量减少
 funcLogic_volumeDown() {
     SendInput('{Volume_Down}')
     return

@@ -23,7 +23,7 @@
         }
         keyFunc_c() {
             ; 复制
-            SendInput('^c')
+            funcLogic_copy()
             ; 监听剪贴板，进行剪贴板显示
             OnClipboardChange(handle)
             handle(*) {
@@ -121,7 +121,7 @@
         }
         keyFunc_v() {
             ; 粘贴
-            SendInput('^v')
+            funcLogic_paste()
         }
         keyFunc_w() {
             ; 关闭标签页
@@ -446,7 +446,7 @@
             SendInput('+{Home}')
         }
         keyFunc_alt_v() {
-            if (WinExist('ahk_exe EXCEL.EXE') || WinExist('ahk_exe wps.exe')) {
+            if (WinActive('ahk_exe EXCEL.EXE') || WinActive('ahk_exe wps.exe') || WinActive('ahk_class XLMAIN')) {
                 ; Ctrl + Alt + V
                 SendInput('^!v')
             }
