@@ -5,7 +5,7 @@ DirCreate(A_Temp '\CapsLockPlus v2')
 FileInstall('lib/WebView2/32bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_32bit.dll', 1)
 FileInstall('lib/WebView2/64bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_64bit.dll', 1)
 FileInstall('res/CapsLockPlusIcon.ico', A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico', 1)
-FileInstall('res/cancelAlwaysOnTop.ico', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.ico', 1)
+FileInstall('res/cancelAlwaysOnTop.png', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.png', 1)
 
 
 #Include <lib_functions>

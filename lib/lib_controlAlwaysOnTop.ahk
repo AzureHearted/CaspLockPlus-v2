@@ -5,33 +5,36 @@
  */
 class AlwaysOnTopControl {
   ; 图标路径
-  picUrl := A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.ico'
+  picUrl := A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.png'
   ; 偏移量
-  offsetX := -180
-  offsetY := 4
+  scale := A_ScreenDPI / 96 ; 获取缩放比例
+  size := 24 * this.scale
+  offsetX := -180 * this.scale
+  offsetY := 4 * this.scale
 
   removeFlag := false
 
   __New(targetId) {
     this.tid := targetId
-    this.gui := Gui('+ToolWindow -Caption ' '+Owner' targetId)
+    this.gui := Gui('+ToolWindow -Caption -DPIScale' ' +Owner' targetId)
     this.gui.MarginX := 0
     this.gui.MarginY := 0
 
-    this.pic := this.gui.AddPicture('w24 h-1', this.picUrl)
+
+    this.pic := this.gui.AddPicture('w' this.size ' h-1', this.picUrl)
     this.pic.OnEvent('Click', (*) => this.HandleClick())
 
 
     WinActive('ahk_id' this.tid)
     this.GetParentPos(&px, &py, &pw, &ph)
 
-    this.gui.Show('' 'x' (px - pw + this.offsetX) ' y' (py + this.offsetY))
+    this.gui.Show('x' (px + pw + this.offsetX) ' y' (py + this.offsetY))
     this.gui.BackColor := "ffffff"
     WinSetTransColor("ffffff", this.gui)
 
     ; 类中的回调函数使用方法
     this.timerFun := ObjBindMethod(this, 'Hook')
-    SetTimer(this.timerFun, 10, 0)
+    SetTimer(this.timerFun, 10, 100000000)
   }
 
   GetParentPos(&px := 0, &py := 0, &pw := 0, &ph := 0) {
