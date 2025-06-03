@@ -166,10 +166,10 @@
 
         }
         keyFunc_f8() {
-
         }
         keyFunc_f9() {
-
+            /** 打开窗口检查器 */
+            Run(A_Temp '\CapsLockPlus v2\WindowSpy.exe')
         }
         keyFunc_f10() {
             /** WebView2浏览器 */
