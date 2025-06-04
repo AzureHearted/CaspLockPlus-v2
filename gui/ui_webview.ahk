@@ -31,9 +31,14 @@ class UIWebView {
                 return
             this.isShow := true
             this.gui.Show(Format('w{} h{}', A_ScreenWidth * 0.5, A_ScreenHeight * 0.6) ' Center')
-            this.wvc := WebView2.CreateControllerAsync(this.gui.Hwnd, , , , this.WebView2LoaderPath).await2()
+            wvc := WebView2.CreateControllerAsync(this.gui.Hwnd, , , , this.WebView2LoaderPath).await2()
+            this.wvc := wvc
             ; wvc := WebView2.CreateControllerAsync(this.gui.Hwnd, , , , this.WebView2LoaderPath).await2()
-            this.wv := this.wvc.CoreWebView2
+            wv := wvc.CoreWebView2
+            this.wv := wv
+            
+
+
             OutputDebug(url ? url : this.history '`t' this.history)
             this.ToNavigate(url ? url : this.history)
         } catch as e {
