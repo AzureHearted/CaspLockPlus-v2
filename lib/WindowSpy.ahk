@@ -156,7 +156,8 @@ TryUpdate() {
     Loop {
         ovi := ""
         pName := WinGetProcessName('ahk_id' curWin)
-        if (pName != 'SLDWORKS')
+        OutputDebug(pName)
+        if (pName != 'SLDWORKS.exe')
             Try ovi := StatusBarGetText(A_Index)
         if (ovi = "")
             break
