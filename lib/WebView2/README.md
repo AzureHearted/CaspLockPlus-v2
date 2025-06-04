@@ -1,14 +1,14 @@
 # WebView2
 
-The Microsoft Edge WebView2 control enables you to host web content in your application using Microsoft Edge (Chromium) as the rendering engine. For more information, see Overview of [Microsoft Edge WebView2](https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/) and Getting Started with WebView2.
+Microsoft Edge WebView2 控件允许您使用 Microsoft Edge (Chromium) 作为渲染引擎在应用程序中托管 Web 内容。 有关详细信息,请参阅 [Microsoft Edge WebView2] 的概述(https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/) 和 Getting Started with WebView2。
 
-The WebView2 Runtime is built into Win10(latest version) and Win11 and can be easily used in AHK.
+WebView2 Runtime内置于Win10(最新版本)和Win11中,可以在AHK中轻松使用。
 
-## api conversion
-- The Asynchronous method will have the `Async` suffix, such as `ExecuteScriptAsync`, and return the [Promise](https://github.com/thqby/ahk2_lib/blob/master/Promise.ahk) after the call.
-- The `add_event` method accepts an ahk callable object with two minimum parameters, and it has a method named `event`, which returns the object and cancels the registration event after the object is destructed.
+## api 转换
+- 异步方法将具有 `Async` 后缀,如 `ExecuteScriptAsync`,并在调用后返回 [Promise](https://github.com/thqby/ahk2_lib/blob/master/Promise.ahk)。
+- `add_event` 方法接受具有两个最小参数的 ahk 调用对象,它有一个名为 `event` 的方法,该方法返回该对象并在对象销毁后取消注册事件。
 
-## Example1: AddHostObjectToEdge, Open with multiple windows
+## 示例1:AddHostObjectToEdge,使用多个窗口打开
 ```autohotkey
 #Include <WebView2\WebView2>
 
@@ -23,7 +23,7 @@ wv.AddHostObjectToScript('ahk', {str:'str from ahk',func:MsgBox})
 wv.OpenDevToolsWindow()
 ```
 
-Run code in Edge DevTools
+在 Edge DevTools 中运行代码
 ```javascript
 obj = await window.chrome.webview.hostObjects.ahk;
 obj.func('call from edge\n' + (await obj.str));
@@ -31,7 +31,7 @@ obj = window.chrome.webview.hostObjects.sync.ahk;
 obj.func('call from edge\n' + obj.str);
 ```
 
-## Example2: Open with only one Tab
+## 例2:仅使用一个选项卡打开
 ```autohotkey
 #Include <WebView2\WebView2>
 
@@ -51,7 +51,7 @@ NewWindowRequestedHandler(wv2, arg) {
 }
 ```
 
-## Example3: Open with multiple Tabs in a window
+## 例3:在一个窗口中打开多个选项卡
 ```autohotkey
 #Include <WebView2\WebView2>
 
