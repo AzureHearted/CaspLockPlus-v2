@@ -2,7 +2,7 @@
 #Include <WebView2/WebView2>
 
 class UIWebView {
-    gui := Gui('+AlwaysOnTop ToolWindow')
+    gui := Gui('+AlwaysOnTop +ToolWindow')
     ; 窗口显示标识符
     isShow := false
     ; 历史路径
@@ -45,7 +45,7 @@ class UIWebView {
             ; 更新窗口标题
             this.gui.Title := this.title
             ; 显示窗口
-            this.gui.Show('w' (this.width * (A_ScreenDPI / 96)) 'h' (this.height * (A_ScreenDPI / 96)) ' Center')
+            this.gui.Show('w' this.width 'h' this.height)
             ; 自动获取焦点
 
             wvc := WebView2.CreateControllerAsync(this.gui.Hwnd, , , , this.WebView2LoaderPath).await2()
@@ -60,6 +60,10 @@ class UIWebView {
 
             OutputDebug(url ? url : this.history '`t' this.history)
             this.ToNavigate(url ? url : this.history)
+            ; 使窗口获得焦点
+            wvc.MoveFocus(0)
+            ; 禁止外部文件退拽到WebView窗口
+            wvc.AllowExternalDrop := false
             ; 注入脚本
             this.InjectionObject()
         } catch as e {

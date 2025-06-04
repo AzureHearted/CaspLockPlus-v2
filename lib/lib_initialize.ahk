@@ -5,6 +5,7 @@ DirCreate(A_Temp '\CapsLockPlus v2')
 FileInstall('lib/WebView2/32bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_32bit.dll', 1)
 FileInstall('lib/WebView2/64bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_64bit.dll', 1)
 FileInstall('lib/WindowSpy.exe', A_Temp '\CapsLockPlus v2\WindowSpy.exe', 1)
+FileInstall('res/keysMap.html', A_Temp '\CapsLockPlus v2\keysMap.html', 1)
 FileInstall('res/CapsLockPlusIcon.ico', A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico', 1)
 FileInstall('res/cancelAlwaysOnTop.png', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.png', 1)
 
@@ -65,8 +66,8 @@ global UISets := {
     setting: UISetting('settings.ini'), ; 设置窗口
     ; hotTips: UITips('已绑定的窗口`t', ["进程", "按键"]), ; Caps按住一段时间后的提示窗口及内容
     hotTips: UserTips(), ; Caps按住一段时间后的提示窗口及内容
-    keysMap: UIWebView('键盘映射', 'http://localhost:5173/', 1160, 380, {
-        debug: (res) => MsgBox(res)
+    keysMap: UIWebView('键盘映射', A_IsCompiled ? A_Temp '\CapsLockPlus v2\keysMap.html' : 'http://localhost:5173/', 1160, 380, {
+        debug: (res) => OutputDebug(res)
     })
 }
 
