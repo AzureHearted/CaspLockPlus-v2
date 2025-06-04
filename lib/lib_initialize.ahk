@@ -65,7 +65,9 @@ global UISets := {
     setting: UISetting('settings.ini'), ; 设置窗口
     ; hotTips: UITips('已绑定的窗口`t', ["进程", "按键"]), ; Caps按住一段时间后的提示窗口及内容
     hotTips: UserTips(), ; Caps按住一段时间后的提示窗口及内容
-    webview: UIWebView(),
+    keysMap: UIWebView('键盘映射', 'http://localhost:5173/', 1160, 380, {
+        debug: (res) => MsgBox(res)
+    })
 }
 
 

@@ -2,15 +2,26 @@
 #Include <WebView2/WebView2>
 
 class UIWebView {
-    gui := Gui('', '浏览器')
+    gui := Gui('+AlwaysOnTop ToolWindow')
     ; 窗口显示标识符
     isShow := false
     ; 历史路径
     history := ''
 
-    ; 构造函数
-    __New() {
-
+    /**
+     * WebView窗口
+     * @param {String} url 要访问的Url
+     * @param {Number} width 窗口宽度
+     * @param {Number} height 窗口高度
+     * @param {Object} objToBeInjected 待注入对象(用于WebView与AHK进行交互)
+     */
+    __New(title := '浏览器', url := 'https://www.autohotkey.com/', width := A_ScreenWidth * 0.5, height := A_ScreenHeight * 0.6, objToBeInjected := {}) {
+        this.title := title
+        this.url := url
+        this.width := width
+        this.height := height
+        ; 待注入的对象
+        this.objToBeInjected := objToBeInjected
         ; WebView2加载器的路径
         ; this.WebView2LoaderPath := A_IsCompiled ? A_Temp '\WebView2Loader_' (A_PtrSize * 8) 'bit.dll' : A_LineFile '\..\lib\WebView2\' (A_PtrSize * 8) 'bit\WebView2Loader.dll'
         this.WebView2LoaderPath := A_Temp '\CapsLockPlus v2\WebView2Loader_' (A_PtrSize * 8) 'bit.dll'
@@ -30,17 +41,27 @@ class UIWebView {
             if (this.isShow)
                 return
             this.isShow := true
-            this.gui.Show(Format('w{} h{}', A_ScreenWidth * 0.5, A_ScreenHeight * 0.6) ' Center')
+
+            ; 更新窗口标题
+            this.gui.Title := this.title
+            ; 显示窗口
+            this.gui.Show('w' (this.width * (A_ScreenDPI / 96)) 'h' (this.height * (A_ScreenDPI / 96)) ' Center')
+            ; 自动获取焦点
+
             wvc := WebView2.CreateControllerAsync(this.gui.Hwnd, , , , this.WebView2LoaderPath).await2()
             this.wvc := wvc
-            ; wvc := WebView2.CreateControllerAsync(this.gui.Hwnd, , , , this.WebView2LoaderPath).await2()
             wv := wvc.CoreWebView2
             this.wv := wv
-            
+            ; wvc.DefaultBackgroundColor := 0
 
+            if (!url) {
+                url := this.url
+            }
 
             OutputDebug(url ? url : this.history '`t' this.history)
             this.ToNavigate(url ? url : this.history)
+            ; 注入脚本
+            this.InjectionObject()
         } catch as e {
             MsgBox(e.Message "`n" this.WebView2LoaderPath, 'WebView出错')
         }
@@ -64,7 +85,17 @@ class UIWebView {
         this.isShow := false
     }
 
+    /**
+     * f 添加对象到WebView环境中
+     * @param {String} name 对象名
+     * @param {Object} obj 对象
+     */
+    InjectionObject() {
+        this.wv.AddHostObjectToScript('ahk', this.objToBeInjected)
+    }
+
     __Delete() {
+        OutputDebug('销毁WebView窗口')
         this.gui.Destroy()
     }
 }

@@ -174,7 +174,7 @@
         keyFunc_f10() {
             /** WebView2浏览器 */
             global UISets, UserConfig
-            UISets.webview.Show(UserConfig.URLDefault)
+            UISets.keysMap.Show()
         }
         keyFunc_f11() {
             Reload()
