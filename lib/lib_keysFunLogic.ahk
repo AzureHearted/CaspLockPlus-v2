@@ -181,6 +181,8 @@ funcLogic_switchSelUpperCase() {
 ;f 置顶 / 解除置顶一个窗口
 funcLogic_winPin() {
     hwnd := WinExist('A')                      ;获取当前窗口的HWND
+    Console.Debug('当前窗口ahk_id：' hwnd)
+
     WinSetAlwaysOnTop(-1, 'ahk_id' hwnd)
 
     OpenExperimentalFunction := IniRead(SettingIniPath, 'General', 'OpenExperimentalFunction', false)

@@ -19,6 +19,8 @@ class UITips {
 
         ; 事件绑定
         this.gui.OnEvent('Close', (*) => (this.isShow := false))
+
+        this.CallAlwaysOnTopHandle := ObjBindMethod(this, 'AlwaysOnTopHandle')
     }
 
 
@@ -30,6 +32,14 @@ class UITips {
         }
     }
 
+    ; 执行窗口置顶
+    AlwaysOnTopHandle() {
+        Console.Debug(this.gui.Hwnd "`t" WinExist('ahk_id' this.gui.Hwnd))
+        if (WinExist('ahk_id' this.gui.Hwnd)) {
+            WinSetAlwaysOnTop(true, 'ahk_id' this.gui.Hwnd)
+        }
+    }
+
     ; 显示窗口
     Show() {
         if (this.isShow) ;* 防止重复显示
@@ -38,6 +48,9 @@ class UITips {
 
         this.gui.Show('NoActivate AutoSize')
 
+        ; 轮询设置置顶
+        SetTimer(this.CallAlwaysOnTopHandle, 100)
+
         ; 设置窗口样式
         hwnd := this.gui.Hwnd
         WinSetTransparent(this.transparent, 'ahk_id' hwnd)
@@ -45,6 +58,8 @@ class UITips {
 
     ; 隐藏窗口
     Hidden() {
+        ; 取消轮询设置置顶
+        SetTimer(this.CallAlwaysOnTopHandle, 0)
         WinClose(this.gui)
     }
 
