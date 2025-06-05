@@ -13,7 +13,7 @@ FileInstall('res/cancelAlwaysOnTop.png', A_Temp '\CapsLockPlus v2\cancelAlwaysOn
 #Include <lib_functions>
 #Include <lib_userHotString>
 #Include <lib_userTips>
-#Include <lib_log>
+#Include <lib_console>
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
 
