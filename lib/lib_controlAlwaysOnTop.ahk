@@ -43,7 +43,7 @@ class AlwaysOnTopControl {
 
   HandleClick(*) {
     WinSetAlwaysOnTop(false, 'ahk_id' this.tid)
-    OutputDebug('取消窗口置顶')
+    Console.Debug('取消窗口置顶')
     SetTimer(this.timerFun, 0)
     this.Remove()
     return
@@ -54,7 +54,7 @@ class AlwaysOnTopControl {
     if (!IsAlwaysOnTop(this.tid) || !WinExist('ahk_id' this.tid) || this.removeFlag)
     {
       this.Remove()
-      OutputDebug('窗口被关闭了')
+      Console.Debug('窗口被关闭了')
       SetTimer(this.timerFun, 0)
       return
     }
@@ -73,6 +73,6 @@ class AlwaysOnTopControl {
   }
 
   __Delete() {
-    OutputDebug('释放AlwaysOnTopControl')
+    Console.Debug('释放AlwaysOnTopControl')
   }
 }

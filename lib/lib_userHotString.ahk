@@ -31,18 +31,18 @@ class UserHotString {
         this.hotStringMap[key] := value
       }
     }
-    OutputDebug('[用户HosString] 成功读取')
+    Console.Debug('[用户HosString] 成功读取')
   }
 
   ; 启用用户HotString
   Enable() {
-    OutputDebug('[用户HotString] 已启用')
+    Console.Debug('[用户HotString] 已启用')
     this.ControlHotString(this.hotStringMap, 'On')
   }
 
   ; 禁用用用户HotString
   Disable() {
-    OutputDebug('已禁用用户HotString')
+    Console.Debug('已禁用用户HotString')
     ; ShowToolTips('已禁用用户HotString')
     this.ControlHotString(this.hotStringMap, 'Off')
   }
@@ -58,7 +58,7 @@ class UserHotString {
       Handle(HotstringName) {
         oldClip := ClipboardAll()
         value := this.hotStringMap[HotstringName]
-        OutputDebug('输出：' value)
+        Console.Debug('输出：' value)
         ; SendText(value)
         A_Clipboard := value
         ClipWait()

@@ -58,7 +58,7 @@ class UISetting {
 
     ; 保存配置
     Save() {
-        OutputDebug('设置保存')
+        Console.Debug('设置保存')
         IniWrite(this.autoStartCheckBox.Value, this.iniPath, 'General', 'AutoStart')
         IniWrite(this.holdCapsLockShowTipsDelayUpDown.Value, this.iniPath, 'General', 'HoldCapsLockShowTipsDelay')
         IniWrite(this.hotTipsTransparentSlider.Value, this.iniPath, 'General', 'HotTipsTransparent')

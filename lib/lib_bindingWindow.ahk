@@ -60,7 +60,7 @@ class BindingWindow {
             ; 防错步骤(临时处理方案)
             RegExMatch(tClass, '^[^\[\]\:]+', &mClass)
             ; TrayTip('mClass[] = ' mClass[], '调试', 'IconI')
-            OutputDebug('mClass[] = ' mClass[])
+            Console.Debug('mClass[] = ' mClass[])
             tempId := WinExist('ahk_class ' '^' mClass[] ' ahk_exe ' tExe)
 
             if (tempId) {

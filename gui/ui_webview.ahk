@@ -58,7 +58,7 @@ class UIWebView {
                 url := this.url
             }
 
-            OutputDebug(url ? url : this.history '`t' this.history)
+            Console.Debug(url ? url : this.history '`t' this.history)
             this.ToNavigate(url ? url : this.history)
             ; 使窗口获得焦点
             wvc.MoveFocus(0)
@@ -99,7 +99,7 @@ class UIWebView {
     }
 
     __Delete() {
-        OutputDebug('销毁WebView窗口')
+        Console.Debug('销毁WebView窗口')
         this.gui.Destroy()
     }
 }

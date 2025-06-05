@@ -27,16 +27,16 @@ GetSelText(endDelay := 0) {
         lastChar := SubStr(selText, StrLen(selText), 1)
         if (Ord(lastChar) != 10) ;如果最后一个字符是换行符，就认为是在IDE那复制了整行，不要这个结果
         {
-            OutputDebug('获取文本成功:' . selText . '`n')
+            Console.Debug('获取文本成功:' . selText . '`n')
             Sleep(endDelay)
             return selText
         } else {
-            OutputDebug('未选中文本:' . '`n')
+            Console.Debug('未选中文本:' . '`n')
             Sleep(endDelay)
             return
         }
     } else {
-        OutputDebug("剪贴板等待超时")
+        Console.Debug("剪贴板等待超时")
         ; 还原剪贴板📋
         A_Clipboard := ClipboardOld
         Sleep(endDelay)
@@ -72,7 +72,7 @@ GetSelectedExplorerItemsPaths() {
                 ; 对比窗口句柄
                 if (window.HWND = hwndActive) {
                     for (item in window.Document.SelectedItems) {
-                        ; OutputDebug(item.Path)
+                        ; Console.Debug(item.Path)
                         paths.Push(item.Path)
                     }
                     return paths
@@ -125,7 +125,7 @@ IsAlwaysOnTop(hwnd := 0) {
         exStyle := WinGetExStyle(hwnd > 0 ? ('ahk_id ' hwnd) : 'A')   ;获取扩展样式
         return exStyle & 0x8
     } catch as e {
-        OutputDebug('IsAlwaysOnTop错误消息:' e.Message)
+        Console.Debug('IsAlwaysOnTop错误消息:' e.Message)
         return false
     }
 }

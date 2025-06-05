@@ -40,10 +40,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '[^$]+?$', &hotKey)
                 fn := keysMap.Get(StrLower('caps_' hotKey[]), Any)
-                OutputDebug(hotKey[] ':触发' fn.Name)
+                Console.Debug(hotKey[] ':触发' fn.Name)
                 fn()
             } catch as e {
-                OutputDebug(e.Message)
+                Console.Debug(e.Message)
                 ShowToolTips(HotkeyName ':触发 执行错误！')
             }
         }
@@ -55,10 +55,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\!)[^!]+?$', &hotKey)
                 fn := keysMap.Get(StrLower('caps_alt_' hotKey[]), Any)
-                OutputDebug(hotKey[] ':触发(alt)' fn.Name)
+                Console.Debug(hotKey[] ':触发(alt)' fn.Name)
                 fn()
             } catch as e {
-                OutputDebug(e.Message)
+                Console.Debug(e.Message)
                 ShowToolTips(HotkeyName ':触发(alt) 执行错误！')
             }
         }
@@ -69,10 +69,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\+)[^+]+?$', &hotKey)
                 fn := keysMap.Get(StrLower('caps_shift_' hotKey[]), Any)
-                OutputDebug(hotKey[] ':触发(shift)' fn.Name)
+                Console.Debug(hotKey[] ':触发(shift)' fn.Name)
                 fn()
             } catch as e {
-                OutputDebug(e.Message)
+                Console.Debug(e.Message)
                 ShowToolTips(HotkeyName ':触发(shift) 执行错误！')
             }
         }
@@ -83,10 +83,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\#)[^#]+?$', &hotKey)
                 fn := keysMap.Get(StrLower('caps_win_' hotKey[]), Any)
-                OutputDebug(hotKey[] ':触发(win)' fn.Name)
+                Console.Debug(hotKey[] ':触发(win)' fn.Name)
                 fn()
             } catch as e {
-                OutputDebug(e.Message)
+                Console.Debug(e.Message)
                 ShowToolTips(HotkeyName ':触发(win) 执行错误！')
             }
         }

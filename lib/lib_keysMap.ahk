@@ -61,7 +61,7 @@ keysMap := Map()
         prefix := prefix ? "_" prefix "_" : "_"
         for rawKey, alias in symbolMap {
             keyName := bootKey prefix rawKey
-            ; OutputDebug(keyName)
+            ; Console.Debug(keyName)
             keysMap[keyName] := %"keyFunc" prefix alias%
         }
     }

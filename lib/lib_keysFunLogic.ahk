@@ -21,20 +21,20 @@ funcLogic_capsHold() {
 
     CapsLockHold := true
     mouseButtons := ["MButton", "LButton", "RButton", "WheelUp", "WheelDown"]
-    ; OutputDebug('-----开始计时-----' A_TickCount - timer)
+    ; Console.Debug('-----开始计时-----' A_TickCount - timer)
     while (GetKeyState('CapsLock', 'P') && (A_ThisHotkey == "CapsLock" || StrIncludesAny(A_ThisHotkey, mouseButtons))) {
         if (UISets.hotTips.isShow) {
             Sleep(50)
             continue
         }
 
-        ; OutputDebug('时间差：' A_TimeSinceThisHotkey '`tA_ThisHotkey:' A_ThisHotkey '`t' A_TimeSincePriorHotkey '`t' A_TimeSinceThisHotkey ' >=? ' UserConfig.HoldCapsLockShowTipsDelay)
+        ; Console.Debug('时间差：' A_TimeSinceThisHotkey '`tA_ThisHotkey:' A_ThisHotkey '`t' A_TimeSincePriorHotkey '`t' A_TimeSinceThisHotkey ' >=? ' UserConfig.HoldCapsLockShowTipsDelay)
         if (A_TimeSinceThisHotkey >= UserConfig.HoldCapsLockShowTipsDelay) {
             if (!UISets.hotTips.isShow) {
-                ; OutputDebug('-----显示提示-----' A_TickCount - timer)
+                ; Console.Debug('-----显示提示-----' A_TickCount - timer)
                 ; 读取绑定的窗口信息
                 bindingKeys := StrSplit(IniRead('winsInfosRecorder.ini', , , ''), '`n')
-                ; OutputDebug(bindingKeys.Length)
+                ; Console.Debug(bindingKeys.Length)
                 ; 清空原本展示的内容
                 UISets.hotTips.ClearTips()
                 tipsMsg := ''
@@ -46,17 +46,17 @@ funcLogic_capsHold() {
                     iconNumber := UISets.hotTips.LoadIcon(path)
                     UISets.hotTips.AddTipItem(iconNumber, ahk_exe, key)
                 }
-                ; OutputDebug(tipsMsg)
+                ; Console.Debug(tipsMsg)
                 UISets.hotTips.Show()
             }
-            ; OutputDebug('-----显示提示-----')
+            ; Console.Debug('-----显示提示-----')
         }
         Sleep(50)
     }
 
     UISets.hotTips.Hidden()
     KeyWait('CapsLock')
-    ; OutputDebug('-----隐藏提示-----')
+    ; Console.Debug('-----隐藏提示-----')
     ; 等到CapsLock被松开才切换CapsLock键的按下标识符
     CapsLockHold := false
 }

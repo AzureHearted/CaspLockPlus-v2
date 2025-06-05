@@ -13,9 +13,11 @@ FileInstall('res/cancelAlwaysOnTop.png', A_Temp '\CapsLockPlus v2\cancelAlwaysOn
 #Include <lib_functions>
 #Include <lib_userHotString>
 #Include <lib_userTips>
+#Include <lib_log/log>
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
 
+Console.Debug("测试", "文本")
 
 ; A_MaxHotkeysPerInterval和A_HotkeyInterval变量控制热键激活的速率, 超过此速率将显示警告对话框.
 A_MaxHotkeysPerInterval := 500
@@ -67,7 +69,7 @@ global UISets := {
     ; hotTips: UITips('已绑定的窗口`t', ["进程", "按键"]), ; Caps按住一段时间后的提示窗口及内容
     hotTips: UserTips(), ; Caps按住一段时间后的提示窗口及内容
     keysMap: UIWebView('键盘映射', A_IsCompiled ? A_Temp '\CapsLockPlus v2\keysMap.html' : 'http://localhost:5173/', 1160, 380, {
-        debug: (res) => OutputDebug(res)
+        debug: (res) => Console.Debug(res)
     })
 }
 

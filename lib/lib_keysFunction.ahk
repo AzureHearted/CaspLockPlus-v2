@@ -101,7 +101,7 @@
             if (!id) {
                 hwnd := WinWait('Quicker搜索')
                 WinActivate('ahk_id' hwnd)
-                OutputDebug('已聚焦')
+                Console.Debug('已聚焦')
             }
         }
         keyFunc_r() {
@@ -361,7 +361,7 @@
                 output := output path (index < paths.Length ? '`n' : '')
                 index++
             }
-            OutputDebug('选中的路径：`n' output)
+            Console.Debug('选中的路径：`n' output)
             A_Clipboard := output
             ShowToolTips('已获取路径：`n' output)
         }
