@@ -3,7 +3,7 @@
 ;! 提示窗口
 class UITips {
     gui := Gui('+AlwaysOnTop -SysMenu +ToolWindow -Caption +Border')
-    scale := A_ScreenDPI / 96
+
     ; 窗口是否显示
     isShow := false
     ; 窗口透明度
@@ -13,9 +13,9 @@ class UITips {
         ; 基础样式
         this.gui.MarginX := 10
         this.gui.MarginY := 10
-        this.gui.SetFont('s' 10 * this.scale, 'Segoe UI')
+        this.gui.SetFont('s' 10, 'Segoe UI')
         this.titleControl := this.gui.AddText('r1.2 Center', title)
-        this.titleControl.SetFont('s' 10 * this.scale * 1.2 ' bold')
+        this.titleControl.SetFont('s' 10 * 1.2 ' bold')
 
         ; 事件绑定
         this.gui.OnEvent('Close', (*) => (this.isShow := false))
@@ -34,7 +34,7 @@ class UITips {
 
     ; 执行窗口置顶
     AlwaysOnTopHandle() {
-        Console.Debug(this.gui.Hwnd "`t" WinExist('ahk_id' this.gui.Hwnd))
+        ; Console.Debug(this.gui.Hwnd "`t" WinExist('ahk_id' this.gui.Hwnd))
         if (WinExist('ahk_id' this.gui.Hwnd)) {
             WinSetAlwaysOnTop(true, 'ahk_id' this.gui.Hwnd)
         }
