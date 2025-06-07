@@ -32,15 +32,17 @@ BindingHotkey()
 ;! CapsLock 热键绑定
 BindingHotkey() {
     global allKeys, keysMap
+    ; Console.Debug(Console.MapToJson(keysMap))
+    ; Console.Debug(keysMap)
     HotIf(CapsCondition)
     for key in allKeys {
         ;! CapsLock + Key ... 绑定
         Hotkey("$" key, callbackA)
         callbackA(HotkeyName) {
             try {
-                RegExMatch(HotkeyName, '[^$]+?$', &hotKey)
-                fn := keysMap.Get(StrLower('caps_' hotKey[]), Any)
-                Console.Debug(hotKey[] ':触发' fn.Name)
+                RegExMatch(HotkeyName, '[^$]+?$', &theHotKey)
+                fn := keysMap.Get(StrLower('caps_' theHotKey[]), Any)
+                Console.Debug(theHotKey[] ':触发' fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)
@@ -53,9 +55,9 @@ BindingHotkey() {
         Hotkey('$!' key, callbackB)
         callbackB(HotkeyName) {
             try {
-                RegExMatch(HotkeyName, '(?<=\!)[^!]+?$', &hotKey)
-                fn := keysMap.Get(StrLower('caps_alt_' hotKey[]), Any)
-                Console.Debug(hotKey[] ':触发(alt)' fn.Name)
+                RegExMatch(HotkeyName, '(?<=\!)[^!]+?$', &theHotKey)
+                fn := keysMap.Get(StrLower('caps_alt_' theHotKey[]), Any)
+                Console.Debug(theHotKey[] ':触发(alt)' fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)
@@ -67,9 +69,9 @@ BindingHotkey() {
         Hotkey('$+' key, callbackC)
         callbackC(HotkeyName) {
             try {
-                RegExMatch(HotkeyName, '(?<=\+)[^+]+?$', &hotKey)
-                fn := keysMap.Get(StrLower('caps_shift_' hotKey[]), Any)
-                Console.Debug(hotKey[] ':触发(shift)' fn.Name)
+                RegExMatch(HotkeyName, '(?<=\+)[^+]+?$', &theHotKey)
+                fn := keysMap.Get(StrLower('caps_shift_' theHotKey[]), Any)
+                Console.Debug(theHotKey[] ':触发(shift)' fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)
@@ -81,9 +83,9 @@ BindingHotkey() {
         Hotkey('$#' key, callbackD)
         callbackD(HotkeyName) {
             try {
-                RegExMatch(HotkeyName, '(?<=\#)[^#]+?$', &hotKey)
-                fn := keysMap.Get(StrLower('caps_win_' hotKey[]), Any)
-                Console.Debug(hotKey[] ':触发(win)' fn.Name)
+                RegExMatch(HotkeyName, '(?<=\#)[^#]+?$', &theHotKey)
+                fn := keysMap.Get(StrLower('caps_win_' theHotKey[]), Any)
+                Console.Debug(theHotKey[] ':触发(win)' fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)

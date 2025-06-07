@@ -306,6 +306,18 @@
         }
     }
 
+    ; =========   小键盘  ... 开始
+    {
+        ; NumLock键
+        keyFunc_numlock() {
+
+        }
+        ; 小键盘乘号键
+        keyFunc_mult() {
+
+        }
+    }
+
     ; =========   鼠标操作 ... 开始
     {
         ; 鼠标滚轮向前
@@ -622,6 +634,18 @@
         }
     }
 
+    ; =========   小键盘  ... 开始
+    {
+        ; NumLock键
+        keyFunc_alt_numlock() {
+
+        }
+        ; 小键盘乘号键
+        keyFunc_alt_mult() {
+
+        }
+    }
+
     ; =========   鼠标操作 ... 开始
     {
         ; 鼠标滚轮向前
@@ -889,6 +913,18 @@
         }
     }
 
+    ; =========   小键盘  ... 开始
+    {
+        ; NumLock键
+        keyFunc_shift_numlock() {
+
+        }
+        ; 小键盘乘号键
+        keyFunc_shift_mult() {
+
+        }
+    }
+
     ; =========   鼠标操作 ... 开始
     {
         ; 鼠标滚轮向前
@@ -1091,6 +1127,18 @@
 
         ; 空格( Space )
         keyFunc_ctrl_space() {
+        }
+    }
+
+    ; =========   小键盘  ... 开始
+    {
+        ; NumLock键
+        keyFunc_ctrl_numlock() {
+
+        }
+        ; 小键盘乘号键
+        keyFunc_ctrl_mult() {
+
         }
     }
 
@@ -1324,6 +1372,18 @@
 
         ; 空格( Space )
         keyFunc_win_space() {
+
+        }
+    }
+
+    ; =========   小键盘  ... 开始
+    {
+        ; NumLock键
+        keyFunc_win_numlock() {
+
+        }
+        ; 小键盘乘号键
+        keyFunc_win_mult() {
 
         }
     }
