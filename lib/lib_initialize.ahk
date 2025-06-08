@@ -37,17 +37,7 @@ if (A_IsCompiled && !A_IsAdmin) {
     }
 }
 
-CapsCondition(*) => GetKeyState("CapsLock", "P")
-
-/** 阻止默认CapsLock事件 */
-Hotkey('*CapsLock', (*) => false)
-
-; 按下 CapsLock 后触发 CapsLock 按下事件
-Hotkey('CapsLock', (*) => funcLogic_capsHold())
-
-; 通过 Shift + CapsLock 触发切换CapsLock
-Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
-
+;! 全局变量
 ; 用户设置的ini路径
 global SettingIniPath := 'settings.ini'
 ; Caps 开关标识符
@@ -62,7 +52,6 @@ global UserConfig := {
     HotTipsTransparent: 200, ; 提示窗口的透明度（0 ~ 255）
     URLDefault: 'http://wdxt.taibiao.com.cn/'
 }
-
 ;* UI集合
 global UISets := {
     setting: UISetting('settings.ini'), ; 设置窗口
@@ -71,6 +60,49 @@ global UISets := {
     keysMap: UIWebView('键盘映射', A_IsCompiled ? A_Temp '\CapsLockPlus v2\keysMap.html' : 'http://localhost:5173/', 1160, 380, {
         debug: (res) => Console.Debug(res)
     })
+}
+
+;! 全局热键
+CapsCondition(*) => GetKeyState("CapsLock", "P")
+
+/** 阻止默认CapsLock事件 */
+Hotkey('*CapsLock', (*) => false)
+
+; 按下 CapsLock 后触发 CapsLock 按下事件
+Hotkey('CapsLock', (*) => funcLogic_capsHold())
+
+; 通过 Shift + CapsLock 触发切换CapsLock
+Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
+
+;* 鼠标事件绑定
+Hotkey('WheelDown', MouseWheelHandle)
+Hotkey('WheelUp', MouseWheelHandle)
+
+/**
+ * 鼠标滚动事件执行器
+ * @param {'WheelDown'|'WheelUp'} HotkeyName 触发的热键
+ */
+MouseWheelHandle(HotkeyName) {
+    MouseGetPos(&mx, &my)
+    hWnd := WinActive('A')
+    WinGetPos(&wx, &wy, &ww, &wh, 'ahk_id' hWnd)
+    ;? 计算当前鼠标相对窗口的位置
+    mxc := mx + wx
+    myc := my + wy
+
+    ; Console.Debug('mx:' mxc ',my:' myc '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`thWnd:' hWnd)
+
+    ;? 判断鼠标是否处于窗口顶部
+    if (my <= 0) {
+        switch (HotkeyName) {
+            case 'WheelUp': funcLogic_volumeUp()
+            case 'WheelDown': funcLogic_volumeDown()
+        }
+    } else {
+        ; 判断鼠标是否在窗口的前 20 像素内（窗口区域顶部）
+        SendInput(Format('{{1}}', HotkeyName))
+    }
+
 }
 
 

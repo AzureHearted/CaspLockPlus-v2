@@ -25,7 +25,6 @@ allKeys := [
     ; "LShift", "RShift", "LControl", "RControl", "LAlt", "RAlt",
 ]
 
-
 ;* 进行热键绑定
 BindingHotkey()
 

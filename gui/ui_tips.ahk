@@ -8,14 +8,17 @@ class UITips {
     isShow := false
     ; 窗口透明度
     transparent := 200
+    ; 缩放率
+    scale := A_ScreenDPI / 96
 
     __New(title := "提示") {
         ; 基础样式
-        this.gui.MarginX := 10
-        this.gui.MarginY := 10
-        this.gui.SetFont('s' 10, 'Segoe UI')
+        this.gui.MarginX := 10 * this.scale
+        this.gui.MarginY := 10 * this.scale
+        this.gui.SetFont('s' (10 * this.scale), 'Segoe UI')
+        ; 标题
         this.titleControl := this.gui.AddText('r1.2 Center', title)
-        this.titleControl.SetFont('s' 10 * 1.2 ' bold')
+        this.titleControl.SetFont('s' (10 * 1.2 * this.scale) ' bold')
 
         ; 事件绑定
         this.gui.OnEvent('Close', (*) => (this.isShow := false))
