@@ -83,26 +83,30 @@ Hotkey('WheelUp', MouseWheelHandle)
  * @param {'WheelDown'|'WheelUp'} HotkeyName 触发的热键
  */
 MouseWheelHandle(HotkeyName) {
-    MouseGetPos(&mx, &my)
-    hWnd := WinActive('A')
-    WinGetPos(&wx, &wy, &ww, &wh, 'ahk_id' hWnd)
-    ;? 计算当前鼠标相对窗口的位置
-    mxc := mx + wx
-    myc := my + wy
+    try {
+        MouseGetPos(&mx, &my)
+        hWnd := WinActive('A')
+        WinGetPos(&wx, &wy, &ww, &wh, 'ahk_id' hWnd)
+        ;? 计算当前鼠标相对窗口的位置
+        mxc := mx + wx
+        myc := my + wy
 
-    ; Console.Debug('mx:' mxc ',my:' myc '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`thWnd:' hWnd)
+        ; Console.Debug('mx:' mxc ',my:' myc '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`thWnd:' hWnd)
 
-    ;? 判断鼠标是否处于窗口顶部
-    if (my <= 0) {
-        switch (HotkeyName) {
-            case 'WheelUp': funcLogic_volumeUp()
-            case 'WheelDown': funcLogic_volumeDown()
+        ;? 判断鼠标是否处于窗口顶部
+        if (my <= 0) {
+            switch (HotkeyName) {
+                case 'WheelUp': funcLogic_volumeUp()
+                case 'WheelDown': funcLogic_volumeDown()
+            }
+        } else {
+            ; 判断鼠标是否在窗口的前 20 像素内（窗口区域顶部）
+            SendInput(Format('{{1}}', HotkeyName))
         }
-    } else {
-        ; 判断鼠标是否在窗口的前 20 像素内（窗口区域顶部）
+    } catch as e {
+        Console.Debug('Unexpected error:', e.Message)
         SendInput(Format('{{1}}', HotkeyName))
     }
-
 }
 
 

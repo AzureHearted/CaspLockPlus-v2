@@ -35,13 +35,14 @@ BindingHotkey() {
     ; Console.Debug(keysMap)
     HotIf(CapsCondition)
     for key in allKeys {
+
         ;! CapsLock + Key ... 绑定
         Hotkey("$" key, callbackA)
         callbackA(HotkeyName) {
             try {
                 RegExMatch(HotkeyName, '[^$]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_' theHotKey[]), Any)
-                Console.Debug(theHotKey[] ':触发' fn.Name)
+                Console.Debug(Console.PadString(theHotKey[], 16, , 'left') Console.PadString(' :触发', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)
@@ -56,7 +57,7 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\!)[^!]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_alt_' theHotKey[]), Any)
-                Console.Debug(theHotKey[] ':触发(alt)' fn.Name)
+                Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(alt)', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)
@@ -70,7 +71,7 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\+)[^+]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_shift_' theHotKey[]), Any)
-                Console.Debug(theHotKey[] ':触发(shift)' fn.Name)
+                Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(shift)', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)
@@ -84,7 +85,7 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\#)[^#]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_win_' theHotKey[]), Any)
-                Console.Debug(theHotKey[] ':触发(win)' fn.Name)
+                Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(win)', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
                 Console.Debug(e.Message)
