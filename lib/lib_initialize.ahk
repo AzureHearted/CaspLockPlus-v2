@@ -91,10 +91,10 @@ MouseWheelHandle(HotkeyName) {
         mxc := mx + wx
         myc := my + wy
 
-        ; Console.Debug('mx:' mxc ',my:' myc '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`thWnd:' hWnd)
+        ; Console.Debug('mx:' mx ',my:' my '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`tmxc:' mxc ',myc:' myc '`thWnd:' hWnd)
 
         ;? 判断鼠标是否处于窗口顶部
-        if (my <= 0) {
+        if (myc <= 0) {
             switch (HotkeyName) {
                 case 'WheelUp': funcLogic_volumeUp()
                 case 'WheelDown': funcLogic_volumeDown()
