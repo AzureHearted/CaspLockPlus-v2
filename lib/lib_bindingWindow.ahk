@@ -73,7 +73,7 @@ class BindingWindow {
                 ; 如果进程不存在且 target_path 存在就直接运行 target_path
                 if (FileExist(tPath)) {
                     ; this.showToolTips('进程不存在，在尝试启动进程：' tExe)
-                    TrayTip('在尝试启动进程：' tExe, '进程不存在', 'Icon!')
+                    TrayTip('在尝试启动进程：' tExe, '进程不存在', 'Iconi')
                     try {
                         Run(tPath)
                     } catch Error as e {
