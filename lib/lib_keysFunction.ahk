@@ -401,6 +401,8 @@
             }
             ; 通过命令行调用Everything搜索
             Run(pathEverythingExe ' -s "' text '"')
+            hwnd := WinWait('ahk_class EVERYTHING')
+            WinActivate('ahk_id' hwnd)
         }
         keyFunc_alt_g() {
         }
