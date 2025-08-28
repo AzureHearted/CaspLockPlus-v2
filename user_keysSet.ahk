@@ -5,8 +5,8 @@
 ; 自定义快捷键
 customKeys := {}
 
-/** VsCode和Quicker共通的部分快捷键 */
-HotIf((*) => ((WinActive('ahk_exe Code.exe') or WinActive('ahk_exe Quicker.exe')) && GetKeyState('CapsLock', 'P')))
+/** VsCode、Visual Studio和Quicker共通的部分快捷键 */
+HotIf((*) => ((WinActive('ahk_exe Code.exe') or WinActive('ahk_exe devenv.exe') or WinActive('ahk_exe Quicker.exe')) && GetKeyState('CapsLock', 'P')))
 
 ; 向⬆️移动代码
 Hotkey('#i', (*) => SendInput('!{Up}'))
