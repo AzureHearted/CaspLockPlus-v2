@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#Include <Array>
 #Include <StringUtils>
 
 RuleTypeMap := Map(
@@ -23,13 +24,12 @@ RuleTypeReverseMap := Map(
 
 ;! 带GUI批量重命名
 class UIBatchReName {
-    ; gui := Gui('+Resize +MinSize600x400', '批量重命名')
     /** @type {Gui} */
     gui := ""
     isShow := false
     isOpenRuleEdit := false
     ; 间隙大小
-    gapX := 4
+    gapX := 8
     gapY := 6
 
     rules := []
@@ -40,11 +40,15 @@ class UIBatchReName {
     __New() {
 
         this.gui := Gui('+Resize +MinSize600x400', '批量重命名')
+
+        /** @type {UIRuleEdit} */
+        this.RuleEdit := UIRuleEdit(this)
+
         ; this.gui := Gui('', '批量重命名')
         this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
 
-        this.gui.MarginX := 8
-        this.gui.MarginY := 6
+        this.gui.MarginX := this.gapX
+        this.gui.MarginY := this.gapY
 
         ; 新增规则按钮
         this.btnAddRule := this.gui.AddButton("r0.75 vAddRule", "新增")
@@ -61,18 +65,20 @@ class UIBatchReName {
 
         ;* 创建规则ListView
         defRuleColumns := ["#", "规则", "说明"]
-        this.listRuleView := this.gui.AddListView("x" this.gui.MarginX " r8 w800 NoSortHdr Checked Grid Section",
-            defRuleColumns)
+        this.listRuleView := this.gui.AddListView("x" this.gui.MarginX " r8 w800 NoSortHdr Checked Grid Section", defRuleColumns)
 
-        this.btnApply := this.gui.AddButton("y+" this.gapY " r0.75 vApply", "应用")
-        this.btnApply.OnEvent("Click", (*) => this.ReNameApply())
+        this.btnApply := this.gui.AddButton("y+" this.gapY " r0.75", "应用")
+        this.btnApply.OnEvent("Click", (*) => this.ReName())
 
-        this.btnClearFiles := this.gui.AddButton("x+m yp hp vClearFiles" this.gapX, "清空文件列表")
+        this.btnPreview := this.gui.AddButton("x+m yp hp", "预览")
+        this.btnPreview.OnEvent("Click", (*) => this.CalcRenamePreview())
+
+        this.btnClearFiles := this.gui.AddButton("x+m yp hp", "清空文件列表")
         this.btnClearFiles.OnEvent("Click", (*) => this.ClearFile())
 
         ;* 创建文件ListView
         defFileColumns := ["状态", "名称", "新名称", "路径"]
-        this.listFileView := this.gui.AddListView("r15 w800 Grid xs LV0x4000", defFileColumns)
+        this.listFileView := this.gui.AddListView("r15 w800 Grid xs Checked LV0x4000", defFileColumns)
 
         this.btnClose := this.gui.AddButton("r0.75 vClose", "关闭")
         this.btnClose.OnEvent("Click", (*) => this.Close())
@@ -81,12 +87,38 @@ class UIBatchReName {
         this.listRuleView.OnEvent("ItemCheck", (listObj, index, isChecked) => this.OnListRuleViewItemCheck(index, isChecked))
         this.listRuleView.OnEvent("DoubleClick", (listObj, index) => this.OnListRuleViewDoubleClick(index))
 
+        this.listFileView.OnEvent("ItemCheck", (listObj, index, isChecked) => this.OnListFileViewItemCheck(index, isChecked))
+        this.listFileView.OnEvent("ColClick", (listObj, colIndex) => this.OnListFileViewColClick(colIndex))
+
         ; 绑定窗口事件
         this.gui.OnEvent('Size', (guiObj, MinMax, Width, Height) => this.OnWindowResize(guiObj, MinMax, Width, Height))
         this.gui.OnEvent("Close", (*) => this.Close())
+        this.gui.OnEvent("DropFiles", (GuiObj, GuiCtrlObj, FileArray, X, Y) => this.OnDropFiles(GuiCtrlObj, FileArray, X, Y))
 
-        /** @type {UIRuleEdit} */
-        this.RuleEdit := UIRuleEdit(this)
+        ; 注册窗口热键
+        HotIfWinActive("ahk_id " this.gui.Hwnd)
+        callback(HotkeyName) {
+            ; 获取焦点控件的句柄
+            hwnd := ControlGetFocus()
+            ; Console.Debug("全选列表", hwnd, this.listFileView.Hwnd)
+            if (hwnd == this.listRuleView.Hwnd) {
+                ; 全选规则列表
+                ; Console.Debug("全选规则列表")
+                loop this.listRuleView.GetCount() {
+                    this.listRuleView.Modify(A_Index, "+Select")
+                }
+            }
+            if (hwnd == this.listFileView.Hwnd) {
+                ; 全选文件列表
+                ; Console.Debug("全选文件列表")
+                loop this.listFileView.GetCount() {
+                    this.listFileView.Modify(A_Index, "+Select")
+                }
+            }
+        }
+        Hotkey("^A", callback)
+        HotIf()
+
     }
 
     /**
@@ -131,6 +163,7 @@ class UIBatchReName {
         middleButtonY := yLRV + hLRV + this.gapY
 
         this.btnApply.Move(, middleButtonY)
+        this.btnPreview.Move(, middleButtonY)
 
         this.btnClearFiles.GetPos(&xBtnClearFiles, &yBtnClearFiles, &wBtnClearFiles, &hBtnClearFiles)
         this.btnClearFiles.Move(wClientW - wMarginX - wBtnClearFiles, middleButtonY)
@@ -151,8 +184,26 @@ class UIBatchReName {
     }
 
     /**
+     * 拖拽文件回调
+     * @param {Object} GuiCtrlObj 
+     * @param {Array} FileArray 文件路径列表
+     * @param {Integer} X 文件拖拽位置的 X 坐标, 相对于窗口客户端区域的左上角.
+     * @param {Integer} Y 文件拖拽位置的 Y 坐标, 相对于窗口客户端区域的左上角.
+     */
+    OnDropFiles(GuiCtrlObj, FileArray, X, Y) {
+        Console.Debug("拖拽文件：", FileArray)
+        for (path in FileArray) {
+            file := ReNameFile(path)
+            this.files.Push(file)
+            this.AddFile(file)
+            ;* 刷新ListView 同时重算重命名结果
+            this.UpdateListView(true)
+        }
+    }
+
+    /**
      * *添加规则
-     * @param {InsertRule|ReplaceRule|RemoveRule|SerializeRule|FillRule|RegexRule|ExtensionRule} rule 
+     * @param {RenameRule.InsertRule|RenameRule.ReplaceRule|RenameRule.RemoveRule|RenameRule.SerializeRule|RenameRule.FillRule|RenameRule.RegexRule|RenameRule.ExtensionRule|""} rule 
      */
     AddRule(rule) {
         ; Console.Debug("新增规则：" rule.TypeName "," rule.Description)
@@ -165,7 +216,7 @@ class UIBatchReName {
 
     /**
      * *更新规则
-     * @param {InsertRule|ReplaceRule|RemoveRule|SerializeRule|FillRule|RegexRule|ExtensionRule} rule 规则数据
+     * @param {RenameRule.InsertRule|RenameRule.ReplaceRule|RenameRule.RemoveRule|RenameRule.SerializeRule|RenameRule.FillRule|RenameRule.RegexRule|RenameRule.ExtensionRule|""} rule 规则数据
      * @param {Integer} index 索引
      */
     UpdateRule(rule, index) {
@@ -197,10 +248,11 @@ class UIBatchReName {
 
     ;* 上移规则
     UpRule(*) {
-        listIndex := this.GetListViewIndexList(this.listRuleView,)
+        listSelectedIndex := this.GetListViewIndexList(this.listRuleView,)
+        listCheckedIndex := this.GetListViewIndexList(this.listRuleView, "C")
         ; Console.Debug("获取到的所选项的索引：", listIndex)
 
-        for (index in listIndex) {
+        for (index in listSelectedIndex) {
             ; 跳过已经在开头的规则
             if (index <= 1)
                 continue
@@ -216,7 +268,11 @@ class UIBatchReName {
             this.listRuleView.Insert(newIndex, , , rule.TypeName, rule.Description)
 
             ; 保持选中状态
-            this.listRuleView.Modify(newIndex, "Select")
+            this.listRuleView.Modify(newIndex, "+Select")
+            ; 判断是否有Checked状态
+            if (listCheckedIndex.IndexOf(index)) {
+                this.listRuleView.Modify(newIndex, "+Check")
+            }
         }
         ; 重新设置索引
         loop this.listRuleView.GetCount() {
@@ -230,6 +286,7 @@ class UIBatchReName {
     ;* 下移规则
     DownRule(*) {
         listIndex := this.GetListViewIndexList(this.listRuleView, , true)
+        listCheckedIndex := this.GetListViewIndexList(this.listRuleView, "C")
         ; Console.Debug("获取到的所选项的索引：", listIndex)
 
         for (index in listIndex) {
@@ -248,7 +305,11 @@ class UIBatchReName {
             this.listRuleView.Insert(newIndex, , , rule.TypeName, rule.Description)
 
             ; 保持选中状态
-            this.listRuleView.Modify(newIndex, "Select")
+            this.listRuleView.Modify(newIndex, "+Select")
+            ; 判断是否有Checked状态
+            if (listCheckedIndex.IndexOf(index)) {
+                this.listRuleView.Modify(newIndex, "+Check")
+            }
         }
         ; 重新设置索引
         loop this.listRuleView.GetCount() {
@@ -322,17 +383,27 @@ class UIBatchReName {
      * @param {Integer} index 索引行号
      */
     OnListRuleViewDoubleClick(index) {
-        ; 触发编辑规则
-        if (!this.isOpenRuleEdit) {
-            ; Console.Debug("显示子窗口")
-            this.isOpenRuleEdit := true
-            ; 先指定要编辑的规则索引
-            this.RuleEdit.editIndex := index
-            this.RuleEdit.Show(mode := "edit", true)
+        if (index) {
+            tabIndex := this.RuleEdit.types.IndexOf(RuleTypeReverseMap.Get(this.rules[index].Type))
+            Console.Debug(tabIndex)
+            ; 触发编辑规则
+            if (!this.isOpenRuleEdit) {
+                ; Console.Debug("显示子窗口")
+                this.isOpenRuleEdit := true
+                ; 先指定要编辑的规则索引
+                this.RuleEdit.editRuleIndex := index
+                this.RuleEdit.nowTabIndex := tabIndex
+                this.RuleEdit.Show(mode := "edit", true)
+            } else {
+                this.RuleEdit.editRuleIndex := index
+                this.RuleEdit.nowTabIndex := tabIndex
+                this.RuleEdit.Activate(mode := "edit", true)
+            }
         } else {
-            this.RuleEdit.editIndex := index
-            this.RuleEdit.Activate(mode := "edit", true)
+            ; 触发创建规则
+            this.ShowRuleEdit()
         }
+
     }
 
     ;* 显示规则编辑窗口
@@ -423,7 +494,8 @@ class UIBatchReName {
      */
     AddFile(file) {
         ; Console.Debug(file.NewPath)
-        rowIndex := this.listFileView.Add(, "✔", file.Name, file.Name, file.Path)
+        index := this.listFileView.Add(, "✔", file.Name, file.Name, file.Path)
+        this.listFileView.Modify(index, "+Check")
     }
 
     ;! 清空文件列表
@@ -461,11 +533,55 @@ class UIBatchReName {
         this.UpdateFileListView()
     }
 
+    /**
+     * ListFileView的Check事件
+     * @param {Integer} index 索引行号
+     * @param {Integer} isChecked 是否勾选
+     */
+    OnListFileViewItemCheck(index, isChecked) {
+        ; Console.Debug("行号：" index ",勾选状态：" isChecked)
+        this.files[index].Enable := isChecked
+        this.UpdateListView()
+    }
+
+    /**
+     * 检测ListFileView的标题点击事件 (点击后进行排序)
+     * @param {Integer} colIndex 列号 
+     */
+    OnListFileViewColClick(colIndex) {
+        ; Console.Debug("第" colIndex "列标题被点击")
+        ; 接收排序后的结果
+        /** @type {Array<ReNameFile>} */
+        newFiles := []
+
+        ; 根据ListFileView展示的数据对this.files进行排序
+        loop this.listFileView.GetCount() {
+            path := this.listFileView.GetText(A_Index, 4)
+            ; 找到对应的file在this.files中的位置
+            index := this.files.Find((f) => f.Path == path)
+            file := this.files[index]
+            newFiles.Push(file)
+        }
+
+        ; 先清空 this.files
+        if (this.files.Length > 0) {
+            this.files.RemoveAt(1, this.files.Length)
+        }
+        ; 再添加
+        loop newFiles.Length {
+            this.files.Push(newFiles[A_Index])
+        }
+
+        ; loop this.files.Length {
+        ;     Console.Debug("当前结果：" this.files[A_Index].Name)
+        ; }
+    }
+
     ;! 计算重命名预览结果
     CalcRenamePreview() {
         ; 获取已经勾选的规则列表
         checkedRuleIndexList := this.GetListViewIndexList(this.listRuleView, "C")
-        Console.Debug("当前勾选的规则下标：", checkedRuleIndexList)
+        ; Console.Debug("当前勾选的规则下标：", checkedRuleIndexList)
         checkedRules := []
         ; 只获取已勾选的规则列表
         loop checkedRuleIndexList.Length {
@@ -490,14 +606,10 @@ class UIBatchReName {
         ; 依次执行规则
         loop checkedRules.Length {
             rule := checkedRules[A_Index]
-            switch (rule.Type) {
-                case "Insert":
-                {
-                    ; this.files := ReNamer.Insert(this.files, rule)
-                    ReNamer.Insert(this.files, rule)
-                }
-            }
+            ReName.%rule.Type%(this.files, rule)
         }
+        ;! 进行冲突检测
+        this.CheckConflict()
         ; 最后更新视图
         loop this.files.Length {
             file := this.files[A_Index]
@@ -505,16 +617,63 @@ class UIBatchReName {
         }
     }
 
-    ;! 重命名应用
-    ReNameApply() {
-        Console.Debug("重命名应用")
+    /**
+     * 冲突检测
+     */
+    CheckConflict() {
+        isConflict := false
+        loop this.files.Length {
+            /** @type {ReNameFile} */
+            file := this.files[A_Index]
+            ; 跳过未修改的文件
+            if (file.Path == file.NewPath) {
+                this.listFileView.Modify(A_Index, , "✔")
+                continue
+            }
+            ; 判断文件是否存在
+            ; Console.Debug("新路径属性："  file.NewAttribute)
+            ; file.NewAttribute 不为空则说文件存在即冲突
+            this.listFileView.Modify(A_Index, , file.NewAttribute ? "❗" : "✔")
+            if (file.NewAttribute) {
+                isConflict := true
+            }
+        }
+        if (isConflict) {
+            ; 冲突时禁用重命名应用按钮
+            this.btnApply.Opt('+Disabled')
+        } else {
+            ; 无冲突时取消对重命名应用按钮的禁用
+            this.btnApply.Opt('-Disabled')
+        }
+    }
 
+    ;! 执行重命名
+    ReName() {
+        ; Console.Debug("重命名应用")
+        for (file in this.files) {
+            ; 跳过冲突项 NewAttribute 不为空就说明冲突
+            if (file.NewAttribute) {
+                continue
+            }
+            if (file.IsDirectory) {
+                ; 对目录的重命名
+                DirMove(file.Path, file.NewPath, "R")
+            } else {
+                ; 对文件的重命名
+                ; Console.Debug("即将重命名：" file.Path " => " file.NewPath)
+                FileMove(file.Path, file.NewPath)
+            }
+        }
+
+        MsgBox("✔重命名成功！（成功重命名" this.files.Length "项）", "提示", "Owner" this.gui.Hwnd)
     }
 
     ; 显示窗口
     Show() {
         ; 获取文件列表
         filePaths := this.GetFiles()
+
+        this.RuleEdit.gui.Opt("+Owner" this.gui.Hwnd)
 
         ; 显示窗口
         if (!this.isShow) {
@@ -539,13 +698,14 @@ class UIBatchReName {
             }
             ; 加载文件列表
             this.LoadFile()
+            ; 按照路径逻辑排序
+            this.listFileView.ModifyCol(4, 'Logical Sort')
             ;* 刷新ListView 同时重算重命名结果
             this.UpdateListView(true)
-            ; 按照路径逻辑排序
-            this.listFileView.ModifyCol(3, 'Logical Sort')
         }
 
         this.isShow := true
+
     }
 
     ; 关闭窗口
@@ -568,9 +728,17 @@ class UIRuleEdit {
     gui := ''
     mode := "create"
     nowTabIndex := 1
-    types := ["插入", "替换", "移除", "序列化", "填充", "正则", "扩展名"]
+    types := [
+        "插入",
+        "替换",
+        "移除",
+        "序列化",
+        "填充",
+        "正则",
+        "扩展名"
+    ]
     tabWidth := 420
-    editIndex := 0 ; 当前编辑的规则索引
+    editRuleIndex := 0 ; 当前编辑的规则索引
 
 
     /**
@@ -583,6 +751,8 @@ class UIRuleEdit {
         this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
         this.gui.MarginX := 8
         this.gui.MarginY := 6
+
+        ; Console.Debug("准备定义选项卡")
 
         ;* 定义选项卡
         this.typeTab := this.gui.AddTab3('', this.types)
@@ -790,7 +960,7 @@ class UIRuleEdit {
         this.btnCancel.OnEvent("Click", (*) => this.Cancel())
 
         ;* 添加Tab事件
-        this.typeTab.OnEvent('Change', (GuiCtrlObj, Info) => this.OnTypeChange(GuiCtrlObj, Info))
+        this.typeTab.OnEvent('Change', (CtrlObj, Info) => this.OnTypeChange(CtrlObj, Info))
 
         ;* 添加窗口事件
         this.gui.OnEvent('Size', (guiObj, MinMax, wWidth, wHeight) => this.OnWindowResize(guiObj, MinMax, wWidth,
@@ -828,18 +998,17 @@ class UIRuleEdit {
 
     /**
      * * 点击标签页导致类型改变的的回调
-     * @param {Gui.Tab} GuiCtrlObj 
-     * @param {} Info 
+     * @param {Gui.Tab} CtrlObj 
+     * @param {Integer} index
      */
-    OnTypeChange(GuiCtrlObj, Info) {
+    OnTypeChange(CtrlObj, index) {
         ; 记录当前tab的下标
-        this.nowTabIndex := GuiCtrlObj.Value
-        ; Console.Debug("当前类型：" this.types[this.nowTabIndex])
+        this.nowTabIndex := CtrlObj.Value
     }
 
     /**
      * 解析表单信息成rule
-     * @returns {InsertRule|ReplaceRule|RemoveRule|SerializeRule|FillRule|RegexRule|ExtensionRule|""}
+     * @returns {RenameRule.InsertRule|RenameRule.ReplaceRule|RenameRule.RemoveRule|RenameRule.SerializeRule|RenameRule.FillRule|RenameRule.RegexRule|RenameRule.ExtensionRule|""}
      */
     ParseToRule() {
         type := RuleTypeMap.Get(this.types[this.nowTabIndex])
@@ -862,7 +1031,7 @@ class UIRuleEdit {
 
         ;* 解析规则
         if (type == "Insert") {
-            rule := InsertRule()
+            rule := RenameRule.InsertRule()
             ; 插入内容
             rule.Content := rawObj.Get("Content")
             ; 忽略扩展名
@@ -903,7 +1072,7 @@ class UIRuleEdit {
             }
 
         } else if (type == "Replace") {
-            rule := ReplaceRule()
+            rule := RenameRule.ReplaceRule()
             ; 需要替换的内容
             rule.Match := rawObj.Get("Match")
             rule.ReplaceTo := rawObj.Get("ReplaceTo")
@@ -924,7 +1093,7 @@ class UIRuleEdit {
             }
 
         } else if (type == "Remove") {
-            rule := RemoveRule()
+            rule := RenameRule.RemoveRule()
             ; 需要移除的内容
             rule.Match := rawObj.Get("Match")
             rule.IgnoreCase := rawObj.Get("IgnoreCase")
@@ -942,7 +1111,7 @@ class UIRuleEdit {
                 }
             }
         } else if (type == "Serialize") {
-            rule := SerializeRule()
+            rule := RenameRule.SerializeRule()
             rule.SequenceStart := rawObj.Get("SequenceStart")
             rule.SequenceStep := rawObj.Get("SequenceStep")
             rule.PaddingCount := rawObj.Get("PaddingCount")
@@ -985,7 +1154,7 @@ class UIRuleEdit {
             }
 
         } else if (type == "Fill") {
-            rule := FillRule()
+            rule := RenameRule.FillRule()
             rule.IgnoreExt := rawObj.Get("IgnoreExt")
             rule.RemoveZeroPadding := rawObj.Get("RemoveZeroPadding")
 
@@ -1016,14 +1185,14 @@ class UIRuleEdit {
             }
 
         } else if (type == "Regex") {
-            rule := RegexRule()
+            rule := RenameRule.RegexRule()
             rule.Regex := rawObj.Get("Regex")
             rule.ReplaceTo := rawObj.Get("ReplaceTo")
             rule.IgnoreCase := rawObj.Get("IgnoreCase")
             rule.IgnoreExt := rawObj.Get("IgnoreExt")
 
         } else if (type == "Extension") {
-            rule := ExtensionRule()
+            rule := RenameRule.ExtensionRule()
             rule.NewExt := rawObj.Get("NewExt")
             rule.IgnoreExt := rawObj.Get("IgnoreExt")
         }
@@ -1033,7 +1202,7 @@ class UIRuleEdit {
 
     /**
      * 投射规则信息到界面
-     * @param {InsertRule|ReplaceRule|RemoveRule|SerializeRule|FillRule|RegexRule|ExtensionRule|""} rule 规则对象
+     * @param {RenameRule.InsertRule|RenameRule.ReplaceRule|RenameRule.RemoveRule|RenameRule.SerializeRule|RenameRule.FillRule|RenameRule.RegexRule|RenameRule.ExtensionRule|""|""} rule 规则对象
      */
     MapRuleGUI(rule) {
         ; Console.Debug("准备显示规则：", rule)
@@ -1089,7 +1258,6 @@ class UIRuleEdit {
                 this.Ctl_Extension_NewExt.Value := rule.NewExt
                 this.Ctl_Extension_IgnoreExt := rule.IgnoreExt
         }
-
     }
 
     ;! 确认提交规则
@@ -1102,9 +1270,9 @@ class UIRuleEdit {
                 ; 如果规则有效则更新父窗口以及父类
                 this.parent.AddRule(rule)
             } else if (this.mode == "edit") {
-                if (this.editIndex) {
-                    Console.Debug("编辑成功！ ", rule)
-                    this.parent.UpdateRule(rule, this.editIndex)
+                if (this.editRuleIndex) {
+                    ; Console.Debug("编辑成功！ ", rule)
+                    this.parent.UpdateRule(rule, this.editRuleIndex)
                 }
             }
         } else {
@@ -1116,7 +1284,7 @@ class UIRuleEdit {
 
     ; 取消操作
     Cancel() {
-        Console.Debug("取消")
+        ; Console.Debug("取消")
         this.Close()
     }
 
@@ -1137,12 +1305,13 @@ class UIRuleEdit {
         if (mode := "create") {
             this.typeTab.Choose(this.nowTabIndex)
         } else if (mode := "edit") {
-            if (!this.editIndex) {
+            if (!this.editRuleIndex) {
                 Console.Debug("没有指定要编辑的规则索引")
                 return
             }
             ; 拿到要编辑的规则
-            rule := this.parent.rules[this.editIndex]
+            rule := this.parent.rules[this.editRuleIndex]
+            this.typeTab.Choose(this.nowTabIndex)
             this.MapRuleGUI(rule)
         }
 
@@ -1163,12 +1332,12 @@ class UIRuleEdit {
         ; Console.Debug("当前类型：" this.types.Get(this.nowTabIndex))
 
         if (mode := "edit") {
-            if (!this.editIndex) {
+            if (!this.editRuleIndex) {
                 Console.Debug("没有指定要编辑的规则索引")
                 return
             }
             ; 拿到要编辑的规则
-            rule := this.parent.rules[this.editIndex]
+            rule := this.parent.rules[this.editRuleIndex]
             this.MapRuleGUI(rule)
         }
     }
@@ -1190,7 +1359,7 @@ class UIRuleEdit {
         WinActivate(this.parent.gui)
         this.parent.gui.Opt("-Disabled")
         ; 关闭窗口后将"编辑索引"置为0
-        this.editIndex := 0
+        this.editRuleIndex := 0
         return 1
     }
 
@@ -1199,349 +1368,353 @@ class UIRuleEdit {
     }
 }
 
-; 基础规则类
-class BaseRule {
-    Type := ""
-    /** 忽略扩展名 */
-    IgnoreExt := true
+class RenameRule {
+    ; 基础规则类
+    class BaseRule {
+        Type := ""
+        /** 忽略扩展名 */
+        IgnoreExt := true
 
-    ; 获取规则名
-    TypeName {
-        get {
-            return RuleTypeReverseMap.Get(this.Type)
+        ; 获取规则名
+        TypeName {
+            get {
+                return RuleTypeReverseMap.Get(this.Type)
+            }
+        }
+
+        ; 获取规则描述
+        Description {
+            get {
+                return ""
+            }
         }
     }
 
-    ; 获取规则描述
-    Description {
-        get {
-            return ""
+    ;! 插入规则
+    class InsertRule extends RenameRule.BaseRule {
+        Type := "Insert"
+        ; 插入内容
+        Content := ""
+        ; 插入位置 'Prefix' | 'Suffix' | 'Index' | 'After' | 'Before' | 'Replace'
+        Position := "prefix"
+        ; Index的锚点位置索引
+        AnchorIndex := 1
+        ; Index是否反向(false为：从左到右)
+        ReverseIndex := false
+        ; Before锚点文本
+        BeforeAnchorText := ''
+        ; After的锚点文本
+        AfterAnchorText := ''
+        ; 忽略大小写
+        IgnoreCase := false
+        ; 全字匹配
+        IsExactMatch := true
+
+        /** @type {String} 规则描述*/
+        Description {
+            get {
+                desc := ""
+                if (this.Type == "Insert") {
+                    desc .= "插入 `"" this.Content "`" "
+
+                    if (this.Position == "Prefix" || this.Position == "Suffix") {
+                        direction := this.Position == "Prefix" ? "前" : "后"
+                        desc .= "作为" direction "缀"
+                    }
+
+                    if (this.Position == "Index") {
+                        desc .= "在位置 " this.AnchorIndex " 处"
+                        if (this.ReverseIndex) {
+                            desc .= "（从右到左）"
+                        }
+                    }
+
+                    if (this.Position == "Before" || this.Position == "After") {
+                        desc .= "在 `"" (this.Position == "Before" ? this.BeforeAnchorText : this.AfterAnchorText) "`""
+                        desc .= this.IgnoreCase ? "（不区分大小写）" : ""
+                        desc .= this.Position == "Before" ? "之前" : "之后"
+                    }
+
+                    if (this.Position == "Replace") {
+                        desc .= "替换当前文件名"
+                    }
+
+                    if (this.IgnoreExt) {
+                        desc .= "（忽略扩展名）"
+                    }
+                }
+                return desc
+            }
+            set {
+
+            }
         }
     }
-}
 
-;! 插入规则
-class InsertRule extends BaseRule {
-    Type := "Insert"
-    ; 插入内容
-    Content := ""
-    ; 插入位置 'Prefix' | 'Suffix' | 'Index' | 'After' | 'Before' | 'Replace'
-    Position := "prefix"
-    ; Index的锚点位置索引
-    AnchorIndex := 1
-    ; Index是否反向(false为：从左到右)
-    ReverseIndex := false
-    ; Before锚点文本
-    BeforeAnchorText := ''
-    ; After的锚点文本
-    AfterAnchorText := ''
-    ; 忽略大小写
-    IgnoreCase := false
-    ; 全字匹配
-    IsExactMatch := true
+    ;! 替换规则
+    class ReplaceRule extends RenameRule.BaseRule {
+        Type := "Replace"
+        /** 需替换的内容 */
+        Match := ""
+        /** 替换为 */
+        ReplaceTo := ""
+        /** 替换范围  'All' | 'First' | 'Last' */
+        Range := 'All'
+        /** 忽略大小写 */
+        IgnoreCase := false
+        /** 全字匹配 */
+        IsExactMatch := true
 
-    /** @type {String} 规则描述*/
-    Description {
-        get {
-            desc := ""
-            if (this.Type == "Insert") {
-                desc .= "插入 `"" this.Content "`" "
+        /** @type {String} 规则描述*/
+        Description {
+            get {
+                rangeMap := {
+                    All: '全部',
+                    First: '首个',
+                    Last: '末个'
+                }
 
+                desc := "替换" rangeMap.%this.Range% " `"" this.Match "`" 替换为 `"" this.ReplaceTo "`""
+
+                ; 最后判断：是否忽略扩展名、区分大小写
+                if (this.IgnoreExt) {
+                    desc .= "（忽略扩展名）"
+                }
+                if (this.IgnoreCase) {
+                    desc .= "（不区分大小写）"
+                }
+                return desc
+            }
+            set {
+
+            }
+        }
+    }
+
+    ;! 删除规则
+    class RemoveRule extends RenameRule.BaseRule {
+        Type := "Remove"
+        /** 要删除的内容 */
+        Match := ""
+        /** 要删除的范围 'All' | 'First' | 'Last' */
+        Range := 'All'
+        /** 忽略大小写*/
+        IgnoreCase := false
+        /** 全字匹配 */
+        IsExactMatch := true
+
+        /** @type {String} 规则描述*/
+        Description {
+            get {
+                rangeMap := {
+                    All: '全部',
+                    First: '首个',
+                    Last: '末个'
+                }
+
+                desc := "移除" rangeMap.%this.Range% " `"" this.Match "`""
+                ; 最后判断：是否忽略扩展名、区分大小写
+                if (this.IgnoreExt) {
+                    desc .= "（忽略扩展名）"
+                }
+                if (this.IgnoreCase) {
+                    desc .= "（不区分大小写）"
+                }
+                return desc
+            }
+            set {
+
+            }
+        }
+    }
+
+    ;! 序列化规则
+    class SerializeRule extends RenameRule.BaseRule {
+        Type := "Serialize"
+        /** 要插入序列的位置 'Prefix' | 'Suffix' | 'Index' | 'After' | 'Before' | 'Replace' */
+        Position := 'Prefix'
+        ; Index的锚点位置索引
+        AnchorIndex := 1
+        ; Index是否反向(false为：从左到右)
+        ReverseIndex := false
+        ; Before锚点文本
+        BeforeAnchorText := ''
+        ; After的锚点文本
+        AfterAnchorText := ''
+        /** 序列起始值 */
+        SequenceStart := 1
+        /** 序列步长 */
+        SequenceStep := 1
+        /** 补零数量 (-1:自动填充 0：不进行补零 >0:填充指定数量的0) */
+        PaddingCount := -1
+        /** 文件夹变更重置 */
+        ResetFolderChanges := true
+        /** 忽略大小写 (当 anchorText 生效时, 对 anchorText 也生效) */
+        IgnoreCase := false
+        /** 全字匹配 (当 anchorText 生效时, 对 anchorText 也生效) */
+        IsExactMatch := true
+
+
+        /** @type {String} 规则描述*/
+        Description {
+            get {
+                desc := "增量序列化起始于 " this.SequenceStart " 增量 " this.SequenceStep ""
+                if (this.ResetFolderChanges) {
+                    desc .= "（文件夹变更时重置）"
+                }
+                if (this.PaddingCount > 0) {
+                    desc .= " 补足长度为 " this.PaddingCount " 位"
+                } else if (this.PaddingCount == -1) {
+                    desc .= " 补足长度自动识别"
+                }
+                ; 位置
                 if (this.Position == "Prefix" || this.Position == "Suffix") {
                     direction := this.Position == "Prefix" ? "前" : "后"
-                    desc .= "作为" direction "缀"
+                    desc .= " 作为" direction "缀"
                 }
 
                 if (this.Position == "Index") {
-                    desc .= "在位置 " this.AnchorIndex " 处"
+                    desc .= " 序列插入到 " this.AnchorIndex " 处"
                     if (this.ReverseIndex) {
-                        desc .= "（从右到左）"
+                        desc .= "（位置索引从右到左）"
                     }
                 }
 
                 if (this.Position == "Before" || this.Position == "After") {
-                    desc .= "在 `"" (this.Position == "Before" ? this.BeforeAnchorText : this.AfterAnchorText) "`""
+                    desc .= " 序列插入到 `"" (this.Position == "Before" ? this.BeforeAnchorText : this.AfterAnchorText) "`""
                     desc .= this.IgnoreCase ? "（不区分大小写）" : ""
                     desc .= this.Position == "Before" ? "之前" : "之后"
                 }
 
                 if (this.Position == "Replace") {
-                    desc .= "替换当前文件名"
+                    desc .= " 替换当前文件名"
                 }
 
                 if (this.IgnoreExt) {
                     desc .= "（忽略扩展名）"
                 }
+                return desc
             }
-            return desc
-        }
-        set {
+            set {
 
-        }
-    }
-}
-
-;! 替换规则
-class ReplaceRule extends BaseRule {
-    Type := "Replace"
-    /** 需替换的内容 */
-    Match := ""
-    /** 替换为 */
-    ReplaceTo := ""
-    /** 替换范围  'All' | 'First' | 'Last' */
-    Range := 'All'
-    /** 忽略大小写 */
-    IgnoreCase := false
-    /** 全字匹配 */
-    IsExactMatch := true
-
-    /** @type {String} 规则描述*/
-    Description {
-        get {
-            rangeMap := {
-                All: '全部',
-                First: '首个',
-                Last: '末个'
             }
-
-            desc := "替换" rangeMap.%this.Range% " `"" this.Match "`" 替换为 `"" this.ReplaceTo "`""
-
-            ; 最后判断：是否忽略扩展名、区分大小写
-            if (this.IgnoreExt) {
-                desc .= "（忽略扩展名）"
-            }
-            if (this.IgnoreCase) {
-                desc .= "（不区分大小写）"
-            }
-            return desc
-        }
-        set {
-
         }
     }
-}
 
-;! 删除规则
-class RemoveRule extends BaseRule {
-    Type := "Remove"
-    /** 要删除的内容 */
-    Match := ""
-    /** 要删除的范围 'All' | 'First' | 'Last' */
-    Range := 'All'
-    /** 忽略大小写*/
-    IgnoreCase := false
-    /** 全字匹配 */
-    IsExactMatch := true
+    ;! 填充规则
+    class FillRule extends RenameRule.BaseRule {
+        Type := "Fill"
 
-    /** @type {String} 规则描述*/
-    Description {
-        get {
-            rangeMap := {
-                All: '全部',
-                First: '首个',
-                Last: '末个'
-            }
-
-            desc := "移除" rangeMap.%this.Range% " `"" this.Match "`""
-            ; 最后判断：是否忽略扩展名、区分大小写
-            if (this.IgnoreExt) {
-                desc .= "（忽略扩展名）"
-            }
-            if (this.IgnoreCase) {
-                desc .= "（不区分大小写）"
-            }
-            return desc
+        /** 补零填充 */
+        ZeroPadding := {
+            /** 是否启用 */
+            Enable: false,
+            /** 填充长度*/
+            Length: 3
         }
-        set {
 
+        /** 移除补零 */
+        RemoveZeroPadding := false
+
+        /** 文本填充 */
+        TextPadding := {
+            /** 是否启用 */
+            Enable: false,
+            /** 填充字符 */
+            Character: "",
+            /** 填充长度*/
+            Length: 3,
+            /** 填充方向 'Left' | 'Right' */
+            Direction: 'Left'
         }
-    }
-}
 
-;! 序列化规则
-class SerializeRule extends BaseRule {
-    Type := "Serialize"
-    /** 要插入序列的位置 'Prefix' | 'Suffix' | 'Index' | 'After' | 'Before' | 'Replace' */
-    Position := 'Prefix'
-    ; Index的锚点位置索引
-    AnchorIndex := 1
-    ; Index是否反向(false为：从左到右)
-    ReverseIndex := false
-    ; Before锚点文本
-    BeforeAnchorText := ''
-    ; After的锚点文本
-    AfterAnchorText := ''
-    /** 序列起始值 */
-    SequenceStart := 1
-    /** 序列步长 */
-    SequenceStep := 1
-    /** 补零数量 (-1:自动填充 0：不进行补零 >0:填充指定数量的0) */
-    PaddingCount := -1
-    /** 文件夹变更重置 */
-    ResetFolderChanges := true
-    /** 忽略大小写 (当 anchorText 生效时, 对 anchorText 也生效) */
-    IgnoreCase := false
-    /** 全字匹配 (当 anchorText 生效时, 对 anchorText 也生效) */
-    IsExactMatch := true
-
-
-    /** @type {String} 规则描述*/
-    Description {
-        get {
-            desc := "增量序列化起始于 " this.SequenceStart " 增量 " this.SequenceStep ""
-            if (this.ResetFolderChanges) {
-                desc .= "（文件夹变更时重置）"
-            }
-            if (this.PaddingCount > 0) {
-                desc .= " 补足长度为 " this.PaddingCount " 位"
-            } else if (this.PaddingCount == -1) {
-                desc .= " 补足长度自动识别"
-            }
-            ; 位置
-            if (this.Position == "Prefix" || this.Position == "Suffix") {
-                direction := this.Position == "Prefix" ? "前" : "后"
-                desc .= " 作为" direction "缀"
-            }
-
-            if (this.Position == "Index") {
-                desc .= " 序列插入到 " this.AnchorIndex " 处"
-                if (this.ReverseIndex) {
-                    desc .= "（位置索引从右到左）"
+        /** @type {String} 规则描述*/
+        Description {
+            get {
+                desc := ""
+                ; 分情况讨论
+                if (this.RemoveZeroPadding) {
+                    desc .= "移除补零"
+                } else if (this.ZeroPadding.Enable) {
+                    desc .= "补零填充，长度 " this.ZeroPadding.Length
                 }
-            }
-
-            if (this.Position == "Before" || this.Position == "After") {
-                desc .= " 序列插入到 `"" (this.Position == "Before" ? this.BeforeAnchorText : this.AfterAnchorText) "`""
-                desc .= this.IgnoreCase ? "（不区分大小写）" : ""
-                desc .= this.Position == "Before" ? "之前" : "之后"
-            }
-
-            if (this.Position == "Replace") {
-                desc .= " 替换当前文件名"
-            }
-
-            if (this.IgnoreExt) {
-                desc .= "（忽略扩展名）"
-            }
-            return desc
-        }
-        set {
-
-        }
-    }
-}
-
-;! 填充规则
-class FillRule extends BaseRule {
-    Type := "Fill"
-
-    /** 补零填充 */
-    ZeroPadding := {
-        /** 是否启用 */
-        Enable: false,
-        /** 填充长度*/
-        Length: 3
-    }
-
-    /** 移除补零 */
-    RemoveZeroPadding := false
-
-    /** 文本填充 */
-    TextPadding := {
-        /** 是否启用 */
-        Enable: false,
-        /** 填充字符 */
-        Character: "",
-        /** 填充长度*/
-        Length: 3,
-        /** 填充方向 'Left' | 'Right' */
-        Direction: 'Left'
-    }
-
-    /** @type {String} 规则描述*/
-    Description {
-        get {
-            desc := ""
-            ; 分情况讨论
-            if (this.RemoveZeroPadding) {
-                desc .= "移除补零"
-            } else if (this.ZeroPadding.Enable) {
-                desc .= "补零填充，长度 " this.ZeroPadding.Length
-            }
-            if (this.TextPadding.Enable) {
-                directionMap := {
-                    Left: "左侧",
-                    Right: "右侧"
+                if (this.TextPadding.Enable) {
+                    directionMap := {
+                        Left: "左侧",
+                        Right: "右侧"
+                    }
+                    if (this.ZeroPadding.Enable || this.RemoveZeroPadding) desc .= "；"
+                        desc .=
+                            "文本填充，填充内容 `"" this.TextPadding.Character "`" ，长度 " this.TextPadding.Length "，" directionMap.%this.TextPadding.Direction%
                 }
-                if (this.ZeroPadding.Enable || this.RemoveZeroPadding) desc .= "；"
-                    desc .=
-                        "文本填充，填充内容 `"" this.TextPadding.Character "`" ，长度 " this.TextPadding.Length "，" directionMap.%this.TextPadding.Direction%
+                ; 判断是否忽略扩展名
+                if (this.ignoreExt) {
+                    desc .= "（忽略扩展名）"
+                }
+                return desc
             }
-            ; 判断是否忽略扩展名
-            if (this.ignoreExt) {
-                desc .= "（忽略扩展名）"
-            }
-            return desc
-        }
-        set {
+            set {
 
+            }
         }
     }
-}
 
-;! 正则规则
-class RegexRule extends BaseRule {
-    Type := "Regex"
-    /** 正则表达式 */
-    Regex := ""
-    /** 替换表达式 */
-    ReplaceTo := ""
-    /** 忽略大小写 */
-    IgnoreCase := false
-    /** 全字匹配 */
-    IsExactMatch := true
+    ;! 正则规则
+    class RegexRule extends RenameRule.BaseRule {
+        Type := "Regex"
+        /** 正则表达式 */
+        Regex := ""
+        /** 替换表达式 */
+        ReplaceTo := ""
+        /** 忽略大小写 */
+        IgnoreCase := false
+        /** 全字匹配 */
+        IsExactMatch := true
 
-    /** @type {String} 规则描述*/
-    Description {
-        get {
-            desc := "替换表达式 `"" this.Regex "`" 替换为 `"" this.ReplaceTo "`""
+        /** @type {String} 规则描述*/
+        Description {
+            get {
+                desc := "替换表达式 `"" this.Regex "`" 替换为 `"" this.ReplaceTo "`""
 
-            if (this.IgnoreCase) {
-                desc .= "（不区分大小写）"
+                if (this.IgnoreCase) {
+                    desc .= "（不区分大小写）"
+                }
+                if (this.IgnoreExt) {
+                    desc .= "（忽略扩展名）"
+                }
+                return desc
             }
-            if (this.IgnoreExt) {
-                desc .= "（忽略扩展名）"
-            }
-            return desc
-        }
-        set {
+            set {
 
+            }
         }
     }
-}
 
-;! 扩展名
-class ExtensionRule extends BaseRule {
-    Type := "Extension"
-    /** 新扩展名 (无需添加.符号) */
-    NewExt := ""
+    ;! 扩展名
+    class ExtensionRule extends RenameRule.BaseRule {
+        Type := "Extension"
+        /** 新扩展名 (无需添加.符号) */
+        NewExt := ""
 
-    /** @type {String} 规则描述*/
-    Description {
-        get {
-            if (this.NewExt == '')
-                return '移除扩展名'
-            desc := "修改扩展名为 `"" this.NewExt "`""
-            if (this.IgnoreExt) {
-                desc .= "（添加到原始文件名）"
+        /** @type {String} 规则描述*/
+        Description {
+            get {
+                if (this.NewExt == '')
+                    return '移除扩展名'
+                desc := "修改扩展名为 `"" this.NewExt "`""
+                if (this.IgnoreExt) {
+                    desc .= "（添加到原始文件名）"
+                }
+                return desc
             }
-            return desc
-        }
-        set {
+            set {
 
+            }
         }
     }
+
 }
+
 
 class ReNameFile {
     Path := ""
@@ -1551,6 +1724,10 @@ class ReNameFile {
     NameNoExt := ""
     Drive := ""
     IsDirectory := false
+
+    ; 是否运行被修改
+    Enable := true
+
     Attribute {
         get {
             attrib := DirExist(this.Path)
@@ -1576,6 +1753,16 @@ class ReNameFile {
     NewPath {
         get {
             return this.Dir "\" this.NewName
+        }
+    }
+    ; 新属性（用于判断是否冲突）
+    NewAttribute {
+        get {
+            if (this.IsDirectory) {
+                return DirExist(this.NewPath)
+            } else {
+                return FileExist(this.NewPath)
+            }
         }
     }
 
@@ -1652,22 +1839,24 @@ class ReNameFile {
     }
 }
 
-
 /**
- * ! 重命名类
+ * ! 重命名器类
  */
-class ReNamer {
+class ReName {
     /**
      * f 插入
      * @param {Array<ReNameFile>} list 待重命名列表
-     * @param {InsertRule} rule 插入规则对象
+     * @param {InsertRule} rule 规则对象
      */
     static Insert(list, rule := "") {
-        Console.Debug(list.Length)
+        ; Console.Debug(list.Length)
         ; 拿到要插入的内容
         content := rule.Content
 
         for (item in list) {
+            ; 跳过不允许被修改的项目
+            if (!item.Enable)
+                continue
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
@@ -1681,12 +1870,12 @@ class ReNamer {
                 case "Index":
                     test := StringUtils.InsertByIndex(test, content, rule.AnchorIndex, rule.ReverseIndex)
                 case "Before":
-                    test := StringUtils.InsertByMatch(test, content, rule.BeforeAnchorText, "before", {
+                    test := StringUtils.InsertByMatch(test, content, rule.BeforeAnchorText, "Before", {
                         ignoreCase: rule.IgnoreCase,
                         isExactMatch: rule.IsExactMatch
                     })
                 case "After":
-                    test := StringUtils.InsertByMatch(test, content, rule.AfterAnchorText, "after", {
+                    test := StringUtils.InsertByMatch(test, content, rule.AfterAnchorText, "After", {
                         ignoreCase: rule.IgnoreCase,
                         isExactMatch: rule.IsExactMatch
                     })
@@ -1696,11 +1885,220 @@ class ReNamer {
 
             ; 最后判断是否加上扩展名
             item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
-            ; Console.Debug("重命名结果：", item)
-            ; Console.Debug("拿到" Type(item) " :" item.Name " => " item.NewName)
-
         }
 
-        return list
+    }
+
+    /**
+     * f 替换
+     * @param {Array<ReNameFile>} list 待重命名列表
+     * @param {ReplaceRule} rule 规则对象
+     */
+    static Replace(list, rule := "") {
+        ; Console.Debug(list.Length)
+        ; 拿到要插入的内容
+        match := rule.Match
+        replaceTo := rule.ReplaceTo
+        range := rule.Range
+
+        for (item in list) {
+            ; 跳过不允许被修改的项目
+            if (!item.Enable)
+                continue
+
+            ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
+            test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+
+            test := StringUtils.Replace(test, match, replaceTo, range, {
+                ignoreCase: rule.IgnoreCase,
+                IsExactMatch: rule.IsExactMatch
+            })
+
+            ; 最后判断是否加上扩展名
+            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+        }
+
+    }
+
+    /**
+     * f 移除
+     * @param {Array<ReNameFile>} list 待重命名列表
+     * @param {RemoveRule} rule 规则对象
+     */
+    static Remove(list, rule := "") {
+        ; Console.Debug(list.Length)
+        ; 拿到要插入的内容
+        match := rule.Match
+        range := rule.Range
+
+        for (item in list) {
+            ; 跳过不允许被修改的项目
+            if (!item.Enable)
+                continue
+
+            ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
+            test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+
+            test := StringUtils.Remove(test, match, range, {
+                ignoreCase: rule.IgnoreCase,
+                IsExactMatch: rule.IsExactMatch
+            })
+
+            ; 最后判断是否加上扩展名
+            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+        }
+    }
+
+    /**
+     * f 序列化
+     * @param {Array<ReNameFile>} list 待重命名列表
+     * @param {SerializeRule} rule 规则对象
+     */
+    static Serialize(list, rule := "") {
+        ; 计算最大补零长度
+        autoPaddingLength := Floor(Log(Abs(list.length * rule.SequenceStep))) + (rule.SequenceStep > 0 ? 1 : 2)
+        ; 当前目录
+        currentDir := ""
+        ; 序列计数
+        num := 0
+        ;依次处理每个文件
+        for (item in list) {
+            ; 跳过不允许被修改的项目
+            if (!item.Enable)
+                continue
+
+            ; 如果当前目录currentDir为空，或者当前目录与item所在目录不同，则记录当前目录
+            if (!currentDir || currentDir != item.Dir) {
+                currentDir := item.Dir
+                ; 判断是否重置序列
+                if (rule.ResetFolderChanges)
+                    num := 0
+            }
+            ; 生成序列
+            sequence := "" Abs(num++ * rule.SequenceStep + rule.SequenceStart)
+            ; 判断是否补零
+            paddingCount := 0
+            if (rule.PaddingCount > 0) {
+                ; 填充到指定长度
+                paddingCount := rule.PaddingCount
+                sequence := StringUtils.Padding(sequence, "0", paddingCount)
+            } else if (rule.PaddingCount <= -1) {
+                ; 自动判断填充长度
+                sequence := StringUtils.Padding(sequence, "0", Integer(sequence) != 0 ? autoPaddingLength : autoPaddingLength + 1)
+            }
+            ;判断是递增还是递减
+            if (rule.SequenceStep < 0 && Integer(sequence) != 0) {
+                ; 如果是序列为负数则加上负号
+                sequence := "-" sequence
+            }
+
+            ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
+            test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+
+            ;? AHK 的switch语句不能使用break跳出，case并不会贯穿
+            switch (rule.Position) {
+                case "Prefix":
+                    test := sequence . test
+                case "Suffix":
+                    test := test . sequence
+                case "Index":
+                    test := StringUtils.InsertByIndex(test, sequence, rule.AnchorIndex, rule.ReverseIndex)
+                case "Before":
+                    test := StringUtils.InsertByMatch(test, sequence, rule.BeforeAnchorText, "Before", {
+                        ignoreCase: rule.IgnoreCase,
+                        isExactMatch: rule.IsExactMatch
+                    })
+                case "After":
+                    test := StringUtils.InsertByMatch(test, sequence, rule.AfterAnchorText, "After", {
+                        ignoreCase: rule.IgnoreCase,
+                        isExactMatch: rule.IsExactMatch
+                    })
+                case "Replace":
+                    test := sequence
+            }
+
+            ; 最后判断是否加上扩展名
+            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+        }
+    }
+
+
+    /**
+     * f 填充
+     * @param {Array<ReNameFile>} list 待重命名列表
+     * @param {FillRule} rule 规则对象
+     */
+    static Fill(list, rule := "") {
+        for (item in list) {
+            ; 跳过不允许被修改的项目
+            if (!item.Enable)
+                continue
+
+            ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
+            test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+
+            ;* 补零填充和移除补零
+            {
+                if (rule.RemoveZeroPadding) {
+                    test := StringUtils.RemoveZeroPaddingString(test)
+                } else if (rule.ZeroPadding.Enable) {
+                    test := StringUtils.ZeroPadding(test, rule.ZeroPadding.Length)
+                }
+            }
+
+            ;* 文本填充
+            {
+                test := StringUtils.Padding(test, rule.TextPadding.Character, rule.TextPadding.Length, rule.TextPadding.Direction)
+            }
+
+
+            ; 最后判断是否加上扩展名
+            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+        }
+    }
+
+    /**
+     * f 正则
+     * @param {Array<ReNameFile>} list 待重命名列表
+     * @param {RegexRule} rule 规则对象
+     */
+    static Regex(list, rule := "") {
+        for (item in list) {
+            ; 跳过不允许被修改的项目
+            if (!item.Enable)
+                continue
+
+            ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
+            test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+
+            test := StringUtils.RegexReplace(test, rule.Regex, rule.ReplaceTo, {
+                ignoreCase: rule.IgnoreCase,
+                isExactMatch: rule.IsExactMatch
+            })
+
+            ; 最后判断是否加上扩展名
+            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+        }
+    }
+
+    /**
+     * f 扩展名
+     * @param {Array<ReNameFile>} list 待重命名列表
+     * @param {ExtensionRule} rule 规则对象
+     */
+    static Extension(list, rule := "") {
+        for (item in list) {
+            ; 跳过不允许被修改的项目和文件夹
+            if (!item.Enable || item.IsDirectory)
+                continue
+
+            ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
+            test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+
+            test .= rule.NewExt ? "." rule.NewExt : ""
+
+            ; 最后判断是否加上扩展名
+            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+        }
     }
 }

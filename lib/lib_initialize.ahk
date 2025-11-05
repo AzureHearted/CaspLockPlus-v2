@@ -14,6 +14,7 @@ try {
 }
 
 
+#Include <Array>
 #Include <lib_functions>
 #Include <lib_userHotString>
 #Include <lib_userTips>

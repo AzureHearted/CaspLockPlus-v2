@@ -73,7 +73,7 @@ class StringUtils {
    * @param {String} original - 原始字符串
    * @param {String} insert - 要插入的内容
    * @param {String} match - 要匹配的字符串（将自动转义正则特殊字符）
-   * @param {"before"|"after"} position - 插入位置，"before" 或 "after"
+   * @param {"Before"|"After"} position - 插入位置，"Before" 或 "After"
    * @param {StringUtils.ExtraOptions} extraOptions - 额外选项，包含 `ignoreCase`(忽略大小写) 和 `isExactMatch`(全字匹配) 的对象
    * @returns - 返回修改后的字符串
    */
@@ -112,7 +112,7 @@ class StringUtils {
     ; 处理 `$`: AHK 的 RegExReplace 替换参数中，$$ 转换为 $。
     SafeInsert := StrReplace(insert, "$", "$$")
 
-    if (position == "before") {
+    if (position == "Before") {
       ; 插入内容 + 捕获组1 => ${safeInsert}$1
       Replacement := SafeInsert . "$1"
     } else { ; position == "after"
@@ -130,11 +130,11 @@ class StringUtils {
    * @param {String} original - 原始字符串
    * @param {String} match - 待替换的字符串
    * @param {String} replaceTo - 替换为
-   * @param {'all'| 'first'| 'last'} range - 替换范围
+   * @param {'All'| 'First'| 'Last'} range - 替换范围
    * @param {StringUtils.ExtraOptions} extraOptions - 额外选项，包含 `ignoreCase`(忽略大小写) 和 `isExactMatch`(全字匹配) 的对象
    * @returns {String} - 返回修改后的字符串
    */
-  static Replace(original, match, replaceTo, range := 'all', extraOptions := {}) {
+  static Replace(original, match, replaceTo, range := 'All', extraOptions := {}) {
 
     ; --- 1. 处理选项和默认值 ---
     ignoreCase := extraOptions.HasOwnProp('ignoreCase') ? extraOptions.ignoreCase : false
@@ -162,11 +162,11 @@ class StringUtils {
 
     Switch range {
 
-      Case 'first':
+      Case 'First':
         ; RegExReplace 的 Limit 参数：1 表示只替换第一个匹配项
         return RegExReplace(original, Pattern, SafeReplaceTo, &Count, 1)
 
-      Case 'last':
+      Case 'Last':
         ; AHK 没有内置的 last-replace 功能，需要先找到最后一个匹配项的位置。
 
         ; 使用 RegExMatch 查找所有匹配项
@@ -196,7 +196,7 @@ class StringUtils {
         ; 直接拼接：前半部分 + 替换文本 + 后半部分
         return PartBefore . SafeReplaceTo . PartAfter
 
-      Case 'all':
+      Case 'All':
         ; RegExReplace 的默认行为是替换所有匹配项
         return RegExReplace(original, Pattern, SafeReplaceTo)
     }
@@ -206,11 +206,11 @@ class StringUtils {
    * * 移除内容
    * @param {String} original - 原始字符串
    * @param {String} match - 待替换的字符串
-   * @param {'all'| 'first'| 'last'} range - 替换范围
+   * @param {'All'| 'First'| 'Last'} range - 替换范围
    * @param {StringUtils.ExtraOptions} extraOptions - 额外选项，包含 `ignoreCase`(忽略大小写) 和 `isExactMatch`(全字匹配) 的对象
    * @returns {String} - 返回修改后的字符串
    */
-  static Remove(original, match, range := 'all', extraOptions := {}) {
+  static Remove(original, match, range := 'All', extraOptions := {}) {
     return this.Replace(original, match, "", range, extraOptions)
   }
 
@@ -267,10 +267,10 @@ class StringUtils {
    * @param {String} original - 原始字符串
    * @param {String} character - 填充字符
    * @param {Integer} length - 填充后的总长度
-   * @param {"left"|"right"} direction - 填充方向 'left' | 'right'
+   * @param {"Left"|"Right"} direction - 填充方向 'Left' | 'Right'
    * @returns {String} - 返回修改后的字符串
    */
-  static Padding(original, character, length, direction := 'left') {
+  static Padding(original, character, length, direction := 'Left') {
 
     OriginalLen := StrLen(original)
 
@@ -289,10 +289,10 @@ class StringUtils {
     Padding := this._StrRepeat(FillChar, PadLength)
 
     ; 4. 拼接
-    if (direction == 'left') {
+    if (direction == 'Left') {
       ; 左填充 (padStart)
       return Padding . original
-    } else if (direction == 'right') {
+    } else if (direction == 'Right') {
       ; 右填充 (padEnd)
       return original . Padding
     }
