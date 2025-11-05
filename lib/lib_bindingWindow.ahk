@@ -77,6 +77,7 @@ class BindingWindow {
                     try {
                         Run(tPath)
                     } catch Error as e {
+                        Console.Debug(e.Message)
                         this.ShowToolTips(e.Message)
                     }
                 } else {

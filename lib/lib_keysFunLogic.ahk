@@ -13,6 +13,10 @@ funcLogic_capsSwitch() {
 
 ;! CapsLock 按住逻辑
 funcLogic_capsHold() {
+
+    ;* 防止当前线程被其他线程中断, 或使其能够被中断.
+    ; Critical "On"
+
     global CapsLockHold, UserConfig, UISets
 
     if (CapsLockHold || UISets.hotTips.isShow) {
@@ -49,7 +53,6 @@ funcLogic_capsHold() {
                 ; Console.Debug(tipsMsg)
                 UISets.hotTips.Show()
             }
-            ; Console.Debug('-----显示提示-----')
         }
         Sleep(50)
     }

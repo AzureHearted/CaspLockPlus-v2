@@ -49,12 +49,14 @@ GetSelText(endDelay := 0) {
 GetActiveExplorerPath() {
     hwndActive := WinActive("A")
     shellApp := ComObject("Shell.Application")
-    for (window in shellApp.Windows) {
-        try {
+    try {
+        for (window in shellApp.Windows) {
             if InStr(window.FullName, "explorer.exe") && window.HWND = hwndActive {
                 return window.Document.Folder.Self.Path
             }
         }
+    } catch as ex {
+        Console.Debug("GetActiveExplorerPath 执行出错：" ex.Message)
     }
     return ""
 }
@@ -65,8 +67,8 @@ GetSelectedExplorerItemsPaths() {
     shellApp := ComObject("Shell.Application")
     paths := []
 
-    for (window in shellApp.Windows) {
-        try {
+    try {
+        for (window in shellApp.Windows) {
             ; 只处理 explorer.exe 相关窗口
             if InStr(window.FullName, "explorer.exe") {
                 ; 对比窗口句柄
@@ -78,7 +80,10 @@ GetSelectedExplorerItemsPaths() {
                     return paths
                 }
             }
+
         }
+    } catch as ex {
+        Console.Debug("GetSelectedExplorerItemsPaths 执行出错：" ex.Message)
     }
     return paths
 }

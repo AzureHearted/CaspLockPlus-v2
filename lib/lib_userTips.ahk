@@ -11,25 +11,25 @@ class UserTips extends UITips {
   sfi := Buffer(this.sfi_size)
 
   __New() {
-    super.__New('已绑定的窗口`t')
+    super.__New('已绑定的窗口')
     defColumns := ["进程", "按键"]
 
     ; tip内容
-    this.listViewControl := this.gui.AddListView("xm r8 ReadOnly NoSort NoSortHdr -E0x200", defColumns)
+    this.listView := this.gui.AddListView("xm r8 ReadOnly NoSort NoSortHdr -E0x200", defColumns)
 
     ; 创建图像列表, 这样 ListView 才可以显示图标:
     this.ImageListID := IL_Create(10)
 
     ; 将图像列表附加到 ListView 上, 这样它就可以在以后显示图标:
-    this.listViewControl.SetImageList(this.ImageListID)
+    this.listView.SetImageList(this.ImageListID)
   }
 
   ; 显示窗口
   Show() {
     ; 自动列宽
-    this.listViewControl.ModifyCol(1, 'AutoHdr')
+    this.listView.ModifyCol(1, 'AutoHdr')
     ; 自动列宽 + 逻辑排序
-    this.listViewControl.ModifyCol(2, 'AutoHdr Logical Sort')
+    this.listView.ModifyCol(2, 'AutoHdr Logical Sort')
     super.Show()
   }
 
@@ -40,11 +40,11 @@ class UserTips extends UITips {
   }
 
   AddTipItem(iconNumber := 0, arg*) {
-    this.listViewControl.Add('Icon' iconNumber, arg*)
+    this.listView.Add('Icon' iconNumber, arg*)
   }
 
   ClearTips() {
-    this.listViewControl.Delete()
+    this.listView.Delete()
   }
 
   LoadIcon(FilePath) {

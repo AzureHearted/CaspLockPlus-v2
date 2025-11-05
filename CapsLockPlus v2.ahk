@@ -1,4 +1,6 @@
 #Requires AutoHotkey v2.0
+#SingleInstance Force
+#ErrorStdOut
 
 #Include <lib_initialize>
 #Include <lib_functions>
@@ -42,10 +44,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '[^$]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_' theHotKey[]), Any)
-                Console.Debug(Console.PadString(theHotKey[], 16, , 'left') Console.PadString(' :触发', 5, , 'right') fn.Name)
+                ; Console.Debug(Console.PadString(theHotKey[], 16, , 'left') Console.PadString(' :触发', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
-                Console.Debug(e.Message)
+                Console.Debug("[错误] File:" e.File " (" e.Line "行), Message:" e.Message)
                 ShowToolTips(HotkeyName ':触发 执行错误！')
             }
         }
@@ -57,10 +59,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\!)[^!]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_alt_' theHotKey[]), Any)
-                Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(alt)', 5, , 'right') fn.Name)
+                ; Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(alt)', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
-                Console.Debug(e.Message)
+                Console.Debug("[错误] File:" e.File " (" e.Line "行), Message:" e.Message)
                 ShowToolTips(HotkeyName ':触发(alt) 执行错误！')
             }
         }
@@ -71,10 +73,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\+)[^+]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_shift_' theHotKey[]), Any)
-                Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(shift)', 5, , 'right') fn.Name)
+                ; Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(shift)', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
-                Console.Debug(e.Message)
+                Console.Debug("[错误] File:" e.File " (" e.Line "行), Message:" e.Message)
                 ShowToolTips(HotkeyName ':触发(shift) 执行错误！')
             }
         }
@@ -85,10 +87,10 @@ BindingHotkey() {
             try {
                 RegExMatch(HotkeyName, '(?<=\#)[^#]+?$', &theHotKey)
                 fn := keysMap.Get(StrLower('caps_win_' theHotKey[]), Any)
-                Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(win)', 5, , 'right') fn.Name)
+                ; Console.Debug(Console.PadString(theHotKey[], 16, ' ', 'left') Console.PadString(' :触发(win)', 5, , 'right') fn.Name)
                 fn()
             } catch as e {
-                Console.Debug(e.Message)
+                Console.Debug("[错误] File:" e.File " (" e.Line "行), Message:" e.Message)
                 ShowToolTips(HotkeyName ':触发(win) 执行错误！')
             }
         }

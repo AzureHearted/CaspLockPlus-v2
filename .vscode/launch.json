@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "v2版本调试",
       "program": "${workspaceFolder}/CapsLockPlus v2.ahk",
-      "stopOnEntry": true
+      "stopOnEntry": false,
     },
     {
       "type": "ahk2",

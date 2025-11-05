@@ -59,10 +59,10 @@ WinSpyGui() {
 WinSpySize(GuiObj, MinMax, Width, Height) {
     Global oGui
 
-    If !oGui.HasProp("txtNotFrozen") ; WinSpyGui() not done yet, return until it is
+    If !oGui.HasProp("txtNotFrozen") ; WinSpyGui() 尚未完成，返回直至完成
         return
 
-    SetTimer Update, (MinMax = 0) ? 250 : 0 ; suspend updates on minimize
+    SetTimer Update, (MinMax = 0) ? 250 : 0 ; 暂停最小化更新
 
     ctrlW := Width - (oGui.MarginX * 2) ; ctrlW := Width - horzMargin
     list := "Title,MousePos,Ctrl,Pos,SBText,VisText,AllText,Freeze"

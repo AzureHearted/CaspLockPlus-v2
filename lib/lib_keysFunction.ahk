@@ -24,11 +24,38 @@
         keyFunc_c() {
             ; 复制
             funcLogic_copy()
+
+            ;* 防止当前线程被其他线程中断, 或使其能够被中断.
+            Critical "On"
             ; 监听剪贴板，进行剪贴板显示
             OnClipboardChange(handle)
-            handle(*) {
-                ShowToolTips(A_Clipboard)
-                OnClipboardChange(handle, 0)
+
+            ; DateType 参数
+            ; 0 = 剪贴板当前为空.
+            ; 1 = 剪贴板包含可以用文本形式表示的内容(包括从资源管理器窗口复制的文件).
+            ; 2 = 剪贴板包含完全是非文本的内容, 例如图片.
+            handle(DataType) {
+                try {
+                    ;* 截取内容的前10个字符作为预览
+                    content := Trim(A_Clipboard)
+                    length := StrLen(content)
+                    preview := SubStr(content, 1, 15)
+                    lengthPreview := StrLen(preview)
+                    if (length > lengthPreview) {
+                        ; 计算差值
+                        diff := length - lengthPreview
+                        preview .= '……(等' . diff . '个字符)'
+                    }
+                    ; 超出的长度用……拼接
+                    ; 显示剪贴的内容
+                    ShowToolTips(preview, 1500)
+                    ; Console.Debug('DataType:' . DataType)
+                    ; ShowToolTips('复制成功！')
+                    OnClipboardChange(handle, 0)
+                } catch as e {
+                    Console.Debug(e)
+                }
+
             }
         }
         keyFunc_d() {
@@ -148,7 +175,9 @@
             funcLogic_winPin()
         }
         keyFunc_f2() {
-
+            ; 呼出批量重命名窗口
+            UISets.batchRename.Show()
+            ; Console.Debug('显示成功')
         }
         keyFunc_f3() {
 
@@ -361,21 +390,36 @@
         keyFunc_alt_b() {
         }
         keyFunc_alt_c() {
+            ;* 防止当前线程被其他线程中断, 或使其能够被中断.
+            Critical "On"
             ; 获取选中的文件路径
             paths := GetSelectedExplorerItemsPaths()
             if (!paths.Length) {
                 ShowToolTips('没有选中文件(文件夹)')
                 return
             }
+
             output := ''
+            showInfo := ''
+
             index := 1
             for (path in paths) {
-                output := output path (index < paths.Length ? '`n' : '')
+                output .= path (index < paths.Length ? '`n' : '')
+
+                ; 显示showInfo显示的行数量
+                if (index <= 5) {
+                    showInfo := output
+                    if (paths.Length - index > 0) {
+                        showInfo .= "…… (等 " (paths.Length - index) " 条结果)"
+                    }
+                }
+
                 index++
             }
-            Console.Debug('选中的路径：`n' output)
+
+            Console.Debug('获取路径：`n' output)
             A_Clipboard := output
-            ShowToolTips('已获取路径：`n' output)
+            ShowToolTips('获取路径：`n' showInfo, 1500)
         }
         keyFunc_alt_d() {
         }

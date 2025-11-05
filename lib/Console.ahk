@@ -25,6 +25,14 @@ class Console {
     }
 
     /**
+     * 打印错误信息
+     * @param {Error} e 错误信息对象
+     */
+    static Error(e) {
+        this.Debug("发生错误：" e.File " (" e.Line "行) , `n错误信息：" e.Message "`n错误原因：" e.What)
+    }
+
+    /**
      * 变量转字符串
      * @param {Any} value 
      * @returns {String}
@@ -33,9 +41,7 @@ class Console {
         try {
             ; OutputDebug(Type(value))
             switch (Type(value)) {
-                case 'Integer':
-                    return value
-                case 'String':
+                case 'Integer', 'String', 'Float':
                     return value
                 case 'Func':
                     return "(Func) " Format('{:-35}`t', value.Name '()') "--ParamsCount: " value.MinParams " ~ " value.MaxParams
@@ -44,7 +50,7 @@ class Console {
                 case 'Map', 'Array', 'Object':
                     return JSON.stringify(value)
                 default:
-                    return 'unknown'
+                    return JSON.stringify(value)
             }
         } catch as e {
             return 'unknown'
