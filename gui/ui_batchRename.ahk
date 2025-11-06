@@ -92,9 +92,9 @@ class UIBatchReName {
         defFileColumns := ["状态", "名称", "新名称", "路径"]
         this.listFileView := this.gui.AddListView("r15 w800 Grid xs Checked LV0x4000", defFileColumns)
 
-        ;* 底部按钮
-        this.btnClose := this.gui.AddButton("r0.65 vClose", "关闭")
-        this.btnClose.OnEvent("Click", (*) => this.Close())
+
+        ;* 状态栏
+        this.stateBar := this.gui.AddStatusBar("", "状态栏")
 
         ; -------------------------
 
@@ -159,6 +159,11 @@ class UIBatchReName {
         wMarginX := this.gui.MarginX
         wMarginY := this.gui.MarginY
 
+        ; 查询状态栏高度
+        this.stateBar.GetPos(, , , &stateBarHeight)
+        ; 计算视口剩余高度
+        viewHight := wClientH - stateBarHeight
+
         ;* 调整顶部按钮 (通常不需要改动)
         this.btnAddRule.GetPos(&xBtnAddRule, &yBtnAddRule, &wBtnAddRule, &hBtnAddRule)
         this.btnAddRule.Move()
@@ -167,7 +172,8 @@ class UIBatchReName {
         this.btnClearRule.Move(wClientW - wMarginX - wBtnClearRule)
 
         ;! 计算除按钮和空白区域尺寸外剩余的尺寸
-        remainH := wClientH - (hBtnAddRule + wMarginY) * 2 - hBtnAddRule - wMarginY * 2 - wMarginY * 2
+        remainH := viewHight - (hBtnAddRule + wMarginY) * 2 - wMarginY * 3
+
         ;* 计算两个listView分别分配的尺寸
         LRV_NewHeight := (remainH) * 0.3
         LFV_NewHeight := remainH - LRV_NewHeight
@@ -198,8 +204,8 @@ class UIBatchReName {
 
         bottomButtonY := yLFV + hLFV + wMarginY
 
-        this.btnClose.GetPos(&xBtnClose, &yBtnClose, &wBtnClose, &hBtnClose)
-        this.btnClose.Move(wClientW - wMarginX - wBtnClose, bottomButtonY)
+        ; this.btnClose.GetPos(&xBtnClose, &yBtnClose, &wBtnClose, &hBtnClose)
+        ; this.btnClose.Move(wClientW - wMarginX - wBtnClose, bottomButtonY)
 
     }
 
