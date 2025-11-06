@@ -1,16 +1,17 @@
 #Requires AutoHotkey v2.0
 #Include <JSON>
 
-
+/**
+ * 控制台类
+ */
 class Console {
     /**
      * 日志打印
      * @param {Array} args 要打印的内容
      */
     static Log(args*) {
-        OutputDebug('数量：' args.Length)
         for (arg in args) {
-            OutputDebug('[log] ' FormatTime(A_Now, 'yyyy-MM-dd HH:mm:ss') '`n' this.VarToString(arg))
+            OutputDebug("[Log] " FormatTime(A_Now, 'yyyy-MM-dd HH:mm:ss') '`n' this._VarToString(arg))
         }
     }
 
@@ -20,7 +21,7 @@ class Console {
      */
     static Debug(args*) {
         for (arg in args) {
-            OutputDebug(this.VarToString(arg))
+            OutputDebug(this._VarToString(arg))
         }
     }
 
@@ -29,83 +30,29 @@ class Console {
      * @param {Error} e 错误信息对象
      */
     static Error(e) {
-        this.Debug("发生错误：" e.File " (" e.Line "行) , `n错误信息：" e.Message "`n错误原因：" e.What)
+        this.Debug("`n发生错误：" e.File " (" e.Line "行) `n错误信息：" e.Message "`n错误原因：" e.What)
     }
 
     /**
-     * 变量转字符串
+     * 变量转字符串(内部)
      * @param {Any} value 
      * @returns {String}
      */
-    static VarToString(value) {
+    static _VarToString(value) {
         try {
             ; OutputDebug(Type(value))
             switch (Type(value)) {
                 case 'Integer', 'String', 'Float':
                     return value
-                case 'Func':
-                    return "(Func) " Format('{:-35}`t', value.Name '()') "--ParamsCount: " value.MinParams " ~ " value.MaxParams
-                case 'VarRef':
-                    return this.VarToString(%value%)
-                case 'Map', 'Array', 'Object':
-                    return JSON.stringify(value)
-                default:
-                    return JSON.stringify(value)
+                case 'VarRef': ; 解析引用类型
+                    return this._VarToString(%value%)
+                case 'Func': ; 函数类型的特殊显示
+                    return "(Func) " . Format('{1}`t', value.Name '()')
+                default: ; 其余类型直接转JSON
+                    return JSON.Dump(value, true)
             }
         } catch as e {
-            return 'unknown'
+            this.Error(e)
         }
-    }
-
-    /**
-     * Map对象转为Json
-     * @param {Map} mapObj Map对象
-     */
-    static MapToJson(mapObj) {
-        result := Console.PadString('MapObj', 80, '-', 'around') . '`n'
-
-        for (key, value in mapObj.__Enum()) {
-            ; OutputDebug(Format('{:-30}`t', this.VarToString(key)) ':' Format('`t{:10}', this.VarToString(value)))
-            result .= Format('{:-30}`t', this.VarToString(key)) ':' Format('`t{:10}', this.VarToString(value))
-            result .= '`n'
-        }
-
-        result .= Console.PadString('-', 80, '-', 'around')
-
-        return result
-    }
-
-    /**
-     * 填充字符
-     * @param {String} str 字符串
-     * @param {Integer} totalLength 填充长度
-     * @param {String} char 填充字符
-     * @param {'right'|'left'|'around'} direction 填充方向
-     */
-    static PadString(str, totalLength, char := ' ', direction := 'right') {
-
-        paddingLen := totalLength - StrLen(str)
-        if (paddingLen <= 0) {
-            return str
-        }
-        switch (direction) {
-            case 'left': return Console.StrRepeat(char, paddingLen) . str
-            case 'right': return str . Console.StrRepeat(char, paddingLen)
-            case 'around': return Console.StrRepeat(char, paddingLen / 2) str . Console.StrRepeat(char, paddingLen / 2)
-
-        }
-    }
-
-    /**
-     * 字符串重复
-     * @param char 字符
-     * @param count 数量
-     */
-    static StrRepeat(char, count) {
-        result := ''
-        loop count {
-            result .= char
-        }
-        return result
     }
 }

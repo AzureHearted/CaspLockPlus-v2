@@ -29,8 +29,8 @@ class UIBatchReName {
     isShow := false
     isOpenRuleEdit := false
     ; 间隙大小
-    gapX := 8
-    gapY := 6
+    gapX := 4
+    gapY := 4
 
     rules := []
     /** @type {Array<ReNameFile>} */
@@ -39,7 +39,7 @@ class UIBatchReName {
     ; 构造
     __New() {
 
-        this.gui := Gui('+Resize +MinSize600x400', '批量重命名')
+        this.gui := Gui('+Resize +MinSize650x400', '批量重命名')
 
         /** @type {UIRuleEdit} */
         this.RuleEdit := UIRuleEdit(this)
@@ -50,24 +50,36 @@ class UIBatchReName {
         this.gui.MarginX := this.gapX
         this.gui.MarginY := this.gapY
 
+        ;* 顶部按钮
         ; 新增规则按钮
-        this.btnAddRule := this.gui.AddButton("r0.75 vAddRule", "新增")
+        this.btnAddRule := this.gui.AddButton("r0.65 vAddRule Section", "新增")
         this.btnAddRule.OnEvent("Click", (*) => this.ShowRuleEdit())
-        this.btnDeleteRule := this.gui.AddButton("x+m yp hp vDeleteRule", "移除")
+        ; 删除规则按钮
+        this.btnDeleteRule := this.gui.AddButton("x+m ys hp vDeleteRule", "移除")
         this.btnDeleteRule.OnEvent("Click", (*) => this.DeleteRule())
-        this.btnUpRule := this.gui.AddButton("x+m yp hp vUpRule", "上移")
+        ; 上移规则按钮
+        this.btnUpRule := this.gui.AddButton("x+m ys hp vUpRule", "上移")
         this.btnUpRule.OnEvent('Click', (*) => this.UpRule())
-        this.btnDownRule := this.gui.AddButton("x+m yp hp vDownRule", "下移")
+        ; 下移规则按钮
+        this.btnDownRule := this.gui.AddButton("x+m ys hp vDownRule", "下移")
         this.btnDownRule.OnEvent('Click', (*) => this.DownRule())
+        ; 预设选项
+        this.gui.AddText("x+m ys" 4 " ", "预设：")
+        this.gui.AddDropDownList("x+ ys" 2, [])
+        this.btnSavePreset := this.gui.AddButton("x+m ys r0.65", "保存")
+        this.btnDeletePreset := this.gui.AddButton("x+m hp", "删除")
+        this.btnManagePreset := this.gui.AddButton("x+m hp", "管理")
+
         ;清空规则按钮
-        this.btnClearRule := this.gui.AddButton("x+m yp hp vClearRule", "清空规则")
+        this.btnClearRule := this.gui.AddButton("x+m ys r0.65 vClearRule", "清空规则")
         this.btnClearRule.OnEvent("Click", (*) => this.ClearRule())
 
         ;* 创建规则ListView
         defRuleColumns := ["#", "规则", "说明"]
-        this.listRuleView := this.gui.AddListView("x" this.gui.MarginX " r8 w800 NoSortHdr Checked Grid Section", defRuleColumns)
+        this.listRuleView := this.gui.AddListView("x" this.gapX " y+m r8 w800 NoSortHdr Checked Grid Section", defRuleColumns)
 
-        this.btnApply := this.gui.AddButton("y+" this.gapY " r0.75", "应用")
+        ;* 中部按钮
+        this.btnApply := this.gui.AddButton("y+" this.gapY " r0.65 +Disabled", "应用")
         this.btnApply.OnEvent("Click", (*) => this.ReName())
 
         this.btnPreview := this.gui.AddButton("x+m yp hp", "预览")
@@ -80,8 +92,16 @@ class UIBatchReName {
         defFileColumns := ["状态", "名称", "新名称", "路径"]
         this.listFileView := this.gui.AddListView("r15 w800 Grid xs Checked LV0x4000", defFileColumns)
 
-        this.btnClose := this.gui.AddButton("r0.75 vClose", "关闭")
+        ;* 底部按钮
+        this.btnClose := this.gui.AddButton("r0.65 vClose", "关闭")
         this.btnClose.OnEvent("Click", (*) => this.Close())
+
+        ; -------------------------
+
+        ; 设置菜单
+        ; this.MenuBar := MenuBar()
+
+        ; -------------------------
 
         ; 绑定ListView事件
         this.listRuleView.OnEvent("ItemCheck", (listObj, index, isChecked) => this.OnListRuleViewItemCheck(index, isChecked))
@@ -147,20 +167,20 @@ class UIBatchReName {
         this.btnClearRule.Move(wClientW - wMarginX - wBtnClearRule)
 
         ;! 计算除按钮和空白区域尺寸外剩余的尺寸
-        remainH := wClientH - (hBtnAddRule + this.gapY) * 2 - hBtnAddRule - this.gapY * 2 - wMarginY * 2
+        remainH := wClientH - (hBtnAddRule + wMarginY) * 2 - hBtnAddRule - wMarginY * 2 - wMarginY * 2
         ;* 计算两个listView分别分配的尺寸
         LRV_NewHeight := (remainH) * 0.3
         LFV_NewHeight := remainH - LRV_NewHeight
 
         ;* 调整listRuleView
         this.listRuleView.GetPos(&xLRV, &yLRV, &wLRV, &hLRV)
-        this.listRuleView.Move(, yBtnAddRule + hBtnAddRule + this.gapY, wClientW - wMarginX * 2, LRV_NewHeight)
+        this.listRuleView.Move(, yBtnAddRule + hBtnAddRule + wMarginY, wClientW - wMarginX * 2, LRV_NewHeight)
 
         ;* 调整中间按钮
         this.listRuleView.GetPos(&xLRV, &yLRV, &wLRV, &hLRV)
         this.btnApply.GetPos(&xBtnApply, &yBtnApply, &wBtnApply, &hBtnApply)
 
-        middleButtonY := yLRV + hLRV + this.gapY
+        middleButtonY := yLRV + hLRV + wMarginY
 
         this.btnApply.Move(, middleButtonY)
         this.btnPreview.Move(, middleButtonY)
@@ -171,12 +191,12 @@ class UIBatchReName {
         ;* 调整listFileView
         this.btnClearFiles.GetPos(&xBtnClearFiles, &yBtnClearFiles, &wBtnClearFiles, &hBtnClearFiles)
         this.listFileView.GetPos(&xLFV, &yLFV, &wLFV, &hLFV)
-        this.listFileView.Move(, yBtnClearFiles + hBtnClearFiles + this.gapY, wClientW - wMarginX * 2, LFV_NewHeight)
+        this.listFileView.Move(, yBtnClearFiles + hBtnClearFiles + wMarginY, wClientW - wMarginX * 2, LFV_NewHeight)
 
         ;* 底部按钮
         this.listFileView.GetPos(&xLFV, &yLFV, &wLFV, &hLFV)
 
-        bottomButtonY := yLFV + hLFV + this.gapY
+        bottomButtonY := yLFV + hLFV + wMarginY
 
         this.btnClose.GetPos(&xBtnClose, &yBtnClose, &wBtnClose, &hBtnClose)
         this.btnClose.Move(wClientW - wMarginX - wBtnClose, bottomButtonY)
@@ -650,18 +670,36 @@ class UIBatchReName {
     ;! 执行重命名
     ReName() {
         ; Console.Debug("重命名应用")
+        if (!this.files.Length) {
+            MsgBox("没有可重命名文件。", "提示")
+            return
+        }
+
         for (file in this.files) {
             ; 跳过冲突项 NewAttribute 不为空就说明冲突
             if (file.NewAttribute) {
                 continue
             }
-            if (file.IsDirectory) {
-                ; 对目录的重命名
-                DirMove(file.Path, file.NewPath, "R")
-            } else {
-                ; 对文件的重命名
-                ; Console.Debug("即将重命名：" file.Path " => " file.NewPath)
-                FileMove(file.Path, file.NewPath)
+
+            try {
+                if (file.IsDirectory) {
+                    ; 对目录的重命名
+                    DirMove(file.Path, file.NewPath, "R")
+                    ; 重命名完成后判断是否成功
+                    if (DirExist(file.NewPath)) {
+                        ; 成功后重新调用__New方法
+
+                    }
+                } else {
+                    ; 对文件的重命名
+                    ; Console.Debug("即将重命名：" file.Path " => " file.NewPath)
+                    FileMove(file.Path, file.NewPath)
+                    if (FileExist(file.NewPath)) {
+
+                    }
+                }
+            } catch as e {
+
             }
         }
 
@@ -1300,7 +1338,8 @@ class UIRuleEdit {
         ; 判断是否禁止父窗口操作
         if (disabledParent)
             this.parent.gui.Opt("+Disabled")
-        this.gui.Show(" Center")
+        ; this.gui.Show(" Center")
+        this.gui.Show()
 
         if (mode := "create") {
             this.typeTab.Choose(this.nowTabIndex)
@@ -1717,23 +1756,41 @@ class RenameRule {
 
 
 class ReNameFile {
-    Path := ""
-    Name := ""
-    Dir := ""
-    Ext := ""
-    NameNoExt := ""
-    Drive := ""
-    IsDirectory := false
+    /**
+     * * 构造
+     * @param {String} path 路径
+     */
+    __New(path) {
+        SplitPath(path, &name, &dir, &ext, &nameNoExt, &drive)
 
-    ; 是否运行被修改
-    Enable := true
+        this.Path := path
+        this.Name := name
+        this.Dir := dir
+        this.Ext := ext
+        this.NameNoExt := nameNoExt
+        this.Drive := drive
 
-    Attribute {
+        ;? 默认让新名称等于旧名称
+        this.NewName := name
+
+        ;? 默认允许被修改
+        this.Enable := true
+
+        ;! 备份一份初始数据
+        this.__InitData := ReNameFile.Backup(this)
+    }
+    ; 是否是目录
+    IsDirectory {
         get {
             attrib := DirExist(this.Path)
-            this.IsDirectory := attrib ~= "[D]"
+            return attrib ~= "[D]"
+        }
+    }
+    ; 属性（为空则说明路径不存在）
+    Attribute {
+        get {
             if (this.IsDirectory) {
-                return attrib
+                return DirExist(this.Path)
             } else {
                 return FileExist(this.Path)
             }
@@ -1766,44 +1823,26 @@ class ReNameFile {
         }
     }
 
-    __New(path) {
-        SplitPath(path, &name, &dir, &ext, &nameNoExt, &drive)
-
-        this.Path := path
-        this.Name := name
-        this.Dir := dir
-        this.Ext := ext
-        this.NameNoExt := nameNoExt
-        this.Drive := drive
-
-        this.NewName := name ;? 默认让新名称等于旧名称
-
-        ; 备份一份初始数据
-        this.InitData := ReNameFile.Backup(this)
-    }
-
-    ; 重置数据回到最初版本
+    ;? 重置数据回到最初版本
     Reset() {
-        this.Path := this.InitData.Path
-        this.Name := this.InitData.Name
-        this.Dir := this.InitData.Dir
-        this.NameNoExt := this.InitData.NameNoExt
-        this.Ext := this.InitData.Ext
-        this.IsDirectory := this.InitData.IsDirectory
-        this.Attribute := this.InitData.Attribute
-        this.Dir := this.InitData.Dir
+        this.Path := this.__InitData.Path
+        this.Name := this.__InitData.Name
+        this.Dir := this.__InitData.Dir
+        this.NameNoExt := this.__InitData.NameNoExt
+        this.Ext := this.__InitData.Ext
+        this.Dir := this.__InitData.Dir
     }
 
     ;* 初始化信息（将旧名称赋值给新名称）
     InitInfo() {
-        this.NewName := this.InitData.Name
+        this.NewName := this.__InitData.Name
     }
 
-    ; 数据模拟类
+    ; 备份子类
     class Backup {
         /**
-         * 
-         * @param {ReNameFile} data 
+         * 构造
+         * @param {ReNameFile} data ReNameFile 对象
          */
         __New(data) {
             this.Name := data.Name
@@ -1812,10 +1851,6 @@ class ReNameFile {
             this.Attribute := data.Attribute
             this.Drive := data.Drive
         }
-
-        ; Name := ""
-        ; Dir := ""
-        ; IsDirectory := false
 
         Path {
             get {
