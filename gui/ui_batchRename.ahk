@@ -83,7 +83,7 @@ class UIBatchReName {
         this.btnApply.OnEvent("Click", (*) => this.ReName())
 
         this.btnPreview := this.gui.AddButton("x+m yp hp", "预览")
-        this.btnPreview.OnEvent("Click", (*) => this.CalcRenamePreview())
+        this.btnPreview.OnEvent("Click", (*) => this.UpdateListView(true))
 
         this.btnClearFiles := this.gui.AddButton("x+m yp hp", "清空文件列表")
         this.btnClearFiles.OnEvent("Click", (*) => this.ClearFile())
@@ -570,10 +570,17 @@ class UIBatchReName {
      */
     OnListFileViewColClick(colIndex) {
         ; Console.Debug("第" colIndex "列标题被点击")
+        ; 根据 `ListFileView` 排序 `this.files` 数组
+        this.SortFilesByListFileView()
+    }
+
+    /**
+     * * 根据 `ListFileView` 排序 `this.files` 数组
+     */
+    SortFilesByListFileView() {
         ; 接收排序后的结果
         /** @type {Array<ReNameFile>} */
         newFiles := []
-
         ; 根据ListFileView展示的数据对this.files进行排序
         loop this.listFileView.GetCount() {
             path := this.listFileView.GetText(A_Index, 4)
@@ -582,7 +589,6 @@ class UIBatchReName {
             file := this.files[index]
             newFiles.Push(file)
         }
-
         ; 先清空 this.files
         if (this.files.Length > 0) {
             this.files.RemoveAt(1, this.files.Length)
@@ -591,10 +597,6 @@ class UIBatchReName {
         loop newFiles.Length {
             this.files.Push(newFiles[A_Index])
         }
-
-        ; loop this.files.Length {
-        ;     Console.Debug("当前结果：" this.files[A_Index].Name)
-        ; }
     }
 
     ;! 计算重命名预览结果
@@ -675,8 +677,10 @@ class UIBatchReName {
             return
         }
 
-        for (file in this.files) {
+        for (file, index in this.files) {
             ; 跳过冲突项 NewAttribute 不为空就说明冲突
+            Console.Debug("重命名循环：" index ' = ' A_Index)
+            ; return
             if (file.NewAttribute) {
                 continue
             }
@@ -688,14 +692,16 @@ class UIBatchReName {
                     ; 重命名完成后判断是否成功
                     if (DirExist(file.NewPath)) {
                         ; 成功后重新调用__New方法
-
+                        file.__New(file.NewPath)
                     }
                 } else {
                     ; 对文件的重命名
                     ; Console.Debug("即将重命名：" file.Path " => " file.NewPath)
                     FileMove(file.Path, file.NewPath)
+                    ; 重命名完成后判断是否成功
                     if (FileExist(file.NewPath)) {
-
+                        ; 成功后重新调用__New方法
+                        file.__New(file.NewPath)
                     }
                 }
             } catch as e {
@@ -736,10 +742,12 @@ class UIBatchReName {
             }
             ; 加载文件列表
             this.LoadFile()
-            ; 按照路径逻辑排序
-            this.listFileView.ModifyCol(4, 'Logical Sort')
             ;* 刷新ListView 同时重算重命名结果
             this.UpdateListView(true)
+            ;* 按照路径逻辑排序(首次排序)
+            this.listFileView.ModifyCol(4, 'Logical Sort')
+            ; 根据 `ListFileView` 排序 `this.files` 数组
+            this.SortFilesByListFileView()
         }
 
         this.isShow := true
@@ -1767,7 +1775,6 @@ class ReNameFile {
         this.Name := name
         this.Dir := dir
         this.Ext := ext
-        this.NameNoExt := nameNoExt
         this.Drive := drive
 
         ;? 默认让新名称等于旧名称
@@ -1776,51 +1783,66 @@ class ReNameFile {
         ;? 默认允许被修改
         this.Enable := true
 
-        ;! 备份一份初始数据
-        this.__InitData := ReNameFile.Backup(this)
-    }
-    ; 是否是目录
-    IsDirectory {
-        get {
+
+        ;! 定义自有的动态属性（为了能被.OwnProps()方法枚举到）
+
+        ; 文件名(不含扩展名)
+        this.DefineProp("NameNoExt", { Get: GetNameNoExt })
+        GetNameNoExt(*) {
+            SplitPath(this.Name, &name, &dir, &ext, &nameNoExt, &drive)
+            return nameNoExt
+        }
+
+        ; 是否是目录
+        this.DefineProp("IsDirectory", { Get: GetIsDirectory })
+        GetIsDirectory(*) {
             attrib := DirExist(this.Path)
             return attrib ~= "[D]"
         }
-    }
-    ; 属性（为空则说明路径不存在）
-    Attribute {
-        get {
-            if (this.IsDirectory) {
-                return DirExist(this.Path)
-            } else {
-                return FileExist(this.Path)
-            }
-        }
-    }
 
-    ; 新文件名
-    NewName := ""
-    ; 新文件名(不含扩展名)
-    NewNameNoExt {
-        get {
+        ; 属性（为空则说明路径不存在）
+        this.DefineProp("Attribute", { Get: GetAttribute })
+        GetAttribute(*) {
+            attrib := ""
+            if (this.IsDirectory) {
+                attrib := DirExist(this.Path)
+            } else {
+                attrib := FileExist(this.Path)
+            }
+            return attrib
+        }
+
+        ; 新文件名(不含扩展名)
+        this.DefineProp("NewNameNoExt", { Get: GetNewNameNoExt })
+        GetNewNameNoExt(*) {
             SplitPath(this.NewName, , , , &nameNoExt)
             return nameNoExt
         }
-    }
-    ; 新路径
-    NewPath {
-        get {
+
+        ; 新路径
+        this.DefineProp("NewPath", { Get: GetNewPath })
+        GetNewPath(*) {
             return this.Dir "\" this.NewName
         }
-    }
-    ; 新属性（用于判断是否冲突）
-    NewAttribute {
-        get {
+
+        ; 新属性（用于判断是否冲突）
+        this.DefineProp("NewAttribute", { Get: GetNewAttribute })
+        GetNewAttribute(*) {
             if (this.IsDirectory) {
                 return DirExist(this.NewPath)
             } else {
                 return FileExist(this.NewPath)
             }
         }
+
+        ;! 备份一份初始数据
+        this.__InitData := ReNameFile.Backup(this)
+    }
+
+
+    ;* 初始化信息（将旧名称赋值给新名称）
+    InitInfo() {
+        this.NewName := this.__InitData.Name
     }
 
     ;? 重置数据回到最初版本
@@ -1828,14 +1850,8 @@ class ReNameFile {
         this.Path := this.__InitData.Path
         this.Name := this.__InitData.Name
         this.Dir := this.__InitData.Dir
-        this.NameNoExt := this.__InitData.NameNoExt
         this.Ext := this.__InitData.Ext
         this.Dir := this.__InitData.Dir
-    }
-
-    ;* 初始化信息（将旧名称赋值给新名称）
-    InitInfo() {
-        this.NewName := this.__InitData.Name
     }
 
     ; 备份子类
@@ -1850,23 +1866,20 @@ class ReNameFile {
             this.IsDirectory := data.IsDirectory
             this.Attribute := data.Attribute
             this.Drive := data.Drive
-        }
 
-        Path {
-            get {
+            this.DefineProp("Path", { Get: GetPath })
+            GetPath(*) {
                 return this.Dir "\" this.Name
             }
-        }
 
-        NameNoExt {
-            get {
+            this.DefineProp("NameNoExt", { Get: GetNameNoExt })
+            GetNameNoExt(*) {
                 SplitPath(this.Name, , , , &nameNoExt)
                 return nameNoExt
             }
-        }
 
-        Ext {
-            get {
+            this.DefineProp("Ext", { Get: GetExt })
+            GetExt(*) {
                 SplitPath(this.Name, , , &Ext)
                 return Ext
             }
