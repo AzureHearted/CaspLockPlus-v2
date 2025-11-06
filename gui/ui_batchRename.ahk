@@ -83,7 +83,7 @@ class UIBatchReName {
         this.btnApply.OnEvent("Click", (*) => this.ReName())
 
         this.btnPreview := this.gui.AddButton("x+m yp hp", "预览")
-        this.btnPreview.OnEvent("Click", (*) => this.UpdateListView(true))
+        this.btnPreview.OnEvent("Click", (*) => this.Update(true))
 
         this.btnClearFiles := this.gui.AddButton("x+m yp hp", "清空文件列表")
         this.btnClearFiles.OnEvent("Click", (*) => this.ClearFile())
@@ -94,7 +94,7 @@ class UIBatchReName {
 
 
         ;* 状态栏
-        this.stateBar := this.gui.AddStatusBar("", "状态栏")
+        this.stateBar := this.gui.AddStatusBar()
 
         ; -------------------------
 
@@ -223,7 +223,7 @@ class UIBatchReName {
             this.files.Push(file)
             this.AddFile(file)
             ;* 刷新ListView 同时重算重命名结果
-            this.UpdateListView(true)
+            this.Update(true)
         }
     }
 
@@ -237,7 +237,7 @@ class UIBatchReName {
         index := this.listRuleView.Add("", this.rules.Length, rule.TypeName, rule.Description)
         this.listRuleView.Modify(index, "Check") ; 默认勾选
         ; 更新两个ListView
-        this.UpdateListView(true)
+        this.Update(true)
     }
 
     /**
@@ -248,7 +248,7 @@ class UIBatchReName {
     UpdateRule(rule, index) {
         this.rules[index] := rule
         this.listRuleView.Modify(index, "Check", , rule.TypeName, rule.Description)
-        this.UpdateListView(true)
+        this.Update(true)
     }
 
     ;* 删除所选规则
@@ -269,7 +269,7 @@ class UIBatchReName {
         }
 
         ; 更新两个ListView
-        this.UpdateListView(true)
+        this.Update(true)
     }
 
     ;* 上移规则
@@ -306,7 +306,7 @@ class UIBatchReName {
         }
 
         ; 更新两个ListView
-        this.UpdateListView(true)
+        this.Update(true)
     }
 
     ;* 下移规则
@@ -343,7 +343,7 @@ class UIBatchReName {
         }
 
         ; 更新两个ListView
-        this.UpdateListView(true)
+        this.Update(true)
     }
 
     /**
@@ -384,7 +384,7 @@ class UIBatchReName {
             this.rules.RemoveAt(1, this.rules.Length)
         }
         this.listRuleView.Delete()
-        this.UpdateListView(true)
+        this.Update(true)
     }
 
     ;*更新规则ListView
@@ -401,7 +401,7 @@ class UIBatchReName {
      */
     OnListRuleViewItemCheck(index, isChecked) {
         ; Console.Debug("行号：" index ",勾选状态：" isChecked)
-        this.UpdateListView(true)
+        this.Update(true)
     }
 
     /**
@@ -532,7 +532,9 @@ class UIBatchReName {
         }
         ; 再清空ListView
         this.listFileView.Delete()
-        ; 文件清空后旧不需要更新ListView了
+        ; 文件清空后就不需要更新ListView了
+        ; 但需要更新状态栏
+        this.UpdateStateBar()
     }
 
     ;*更新文件ListView
@@ -544,12 +546,12 @@ class UIBatchReName {
     }
 
     /**
-     *  *更新两个ListView
-     * @param updateReName 是否更新重命名结果
+     * * 更新两个ListView (可选计算重命名结果)
+     * @param updateResult 是否更新重命名结果
      */
-    UpdateListView(updateReName := false) {
+    Update(updateResult := false) {
 
-        if (updateReName) {
+        if (updateResult) {
             ; 计算重命名预览结果
             this.CalcRenamePreview()
         }
@@ -557,6 +559,16 @@ class UIBatchReName {
         ; 更新ListView
         this.UpdateRuleListView()
         this.UpdateFileListView()
+
+        ; 更新状态栏
+        this.UpdateStateBar()
+    }
+
+    /**
+     * * 更新状态栏文本
+     */
+    UpdateStateBar() {
+        this.stateBar.SetText(" " this.files.Length " 个文件")
     }
 
     /**
@@ -567,7 +579,7 @@ class UIBatchReName {
     OnListFileViewItemCheck(index, isChecked) {
         ; Console.Debug("行号：" index ",勾选状态：" isChecked)
         this.files[index].Enable := isChecked
-        this.UpdateListView()
+        this.Update()
     }
 
     /**
@@ -727,13 +739,9 @@ class UIBatchReName {
 
         ; 显示窗口
         if (!this.isShow) {
-
-
             ; 显示窗口
             this.gui.Show('AutoSize Center')
-
         } else {
-
             ; 并且激活窗口
             WinActivate(this.gui)
         }
@@ -749,15 +757,17 @@ class UIBatchReName {
             ; 加载文件列表
             this.LoadFile()
             ;* 刷新ListView 同时重算重命名结果
-            this.UpdateListView(true)
+            this.Update(true)
             ;* 按照路径逻辑排序(首次排序)
             this.listFileView.ModifyCol(4, 'Logical Sort')
             ; 根据 `ListFileView` 排序 `this.files` 数组
             this.SortFilesByListFileView()
         }
 
-        this.isShow := true
+        ;* 更新状态栏
+        this.UpdateStateBar()
 
+        this.isShow := true
     }
 
     ; 关闭窗口
