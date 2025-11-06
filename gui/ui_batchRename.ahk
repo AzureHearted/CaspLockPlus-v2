@@ -1,6 +1,10 @@
 #Requires AutoHotkey v2.0
+#Include <JSON>
 #Include <Array>
 #Include <StringUtils>
+
+; 防止中文被转义
+JSON.EscapeUnicode := false
 
 RuleTypeMap := Map(
     "插入", "Insert",
@@ -29,30 +33,32 @@ class UIBatchReName {
     isShow := false
     isOpenRuleEdit := false
     ; 间隙大小
-    gapX := 4
+    gapX := 2
     gapY := 4
 
     rules := []
     /** @type {Array<ReNameFile>} */
     files := []
 
+    DPIScale := A_ScreenDPI / 96
+
     ; 构造
     __New() {
 
-        this.gui := Gui('+Resize +MinSize650x400', '批量重命名')
+        this.gui := Gui('+Resize +MinSize680x400', '批量重命名')
 
         /** @type {UIRuleEdit} */
         this.RuleEdit := UIRuleEdit(this)
 
         ; this.gui := Gui('', '批量重命名')
-        this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
+        this.gui.SetFont('q5 s10', "Microsoft YaHei")
 
         this.gui.MarginX := this.gapX
         this.gui.MarginY := this.gapY
 
         ;* 顶部按钮
         ; 新增规则按钮
-        this.btnAddRule := this.gui.AddButton("r0.65 vAddRule Section", "新增")
+        this.btnAddRule := this.gui.AddButton("r0.75 vAddRule Section", "新增")
         this.btnAddRule.OnEvent("Click", (*) => this.ShowRuleEdit())
         ; 删除规则按钮
         this.btnDeleteRule := this.gui.AddButton("x+m ys hp vDeleteRule", "移除")
@@ -64,22 +70,26 @@ class UIBatchReName {
         this.btnDownRule := this.gui.AddButton("x+m ys hp vDownRule", "下移")
         this.btnDownRule.OnEvent('Click', (*) => this.DownRule())
         ; 预设选项
-        this.gui.AddText("x+m ys" 4 " ", "预设：")
-        this.gui.AddDropDownList("x+ ys" 2, [])
-        this.btnSavePreset := this.gui.AddButton("x+m ys r0.65", "保存")
-        this.btnDeletePreset := this.gui.AddButton("x+m hp", "删除")
-        this.btnManagePreset := this.gui.AddButton("x+m hp", "管理")
+        ; Console.Debug("DPIScale：" this.DPIScale)
+        this.gui.AddText("x+m" 4 " yp" 4, "预设：")
+        this.listPreset := this.gui.AddDropDownList("x+m ys", ["预设1", "预设2"])
+        ; this.gui.AddText("x+m yp+" 3 * this.DPIScale " h" 20 * this.DPIScale, "预设：")
+        ; todo 这里再Windows11显示存在bug
+        this.btnSavePreset := this.gui.AddButton("x+m ys r0.75 +Disabled", "保存预设")
+        this.btnSavePreset.OnEvent("Click", (*) => this.SavePreset())
+        this.btnDeletePreset := this.gui.AddButton("x+m hp +Disabled", "删除预设")
+        this.btnManagePreset := this.gui.AddButton("x+m hp", "管理预设")
 
         ;清空规则按钮
-        this.btnClearRule := this.gui.AddButton("x+m ys r0.65 vClearRule", "清空规则")
+        this.btnClearRule := this.gui.AddButton("x+m ys r0.75 vClearRule", "清空规则")
         this.btnClearRule.OnEvent("Click", (*) => this.ClearRule())
 
         ;* 创建规则ListView
         defRuleColumns := ["#", "规则", "说明"]
-        this.listRuleView := this.gui.AddListView("x" this.gapX " y+m r8 w800 NoSortHdr Checked Grid Section", defRuleColumns)
+        this.listRuleView := this.gui.AddListView("x" this.gapX " y+m r8 NoSortHdr Checked Grid Section", defRuleColumns)
 
         ;* 中部按钮
-        this.btnApply := this.gui.AddButton("y+" this.gapY " r0.65 +Disabled", "应用")
+        this.btnApply := this.gui.AddButton("y+" this.gapY " r0.75 +Disabled", "应用")
         this.btnApply.OnEvent("Click", (*) => this.ReName())
 
         this.btnPreview := this.gui.AddButton("x+m yp hp", "预览")
@@ -90,7 +100,7 @@ class UIBatchReName {
 
         ;* 创建文件ListView
         defFileColumns := ["状态", "名称", "新名称", "路径"]
-        this.listFileView := this.gui.AddListView("r15 w800 Grid xs Checked LV0x4000", defFileColumns)
+        this.listFileView := this.gui.AddListView("r15 Grid xs Checked LV0x4000", defFileColumns)
 
 
         ;* 状态栏
@@ -171,6 +181,12 @@ class UIBatchReName {
         this.btnClearRule.GetPos(&xBtnClearRule, &yBtnClearRule, &wBtnClearRule, &hBtnClearRule)
         this.btnClearRule.Move(wClientW - wMarginX - wBtnClearRule)
 
+        ; PostMessage(0x153, -1, hBtnAddRule, this.listPreset)  ; 设置选区字段的高度.
+        ; PostMessage(0x153, 0, hBtnAddRule, this.listPreset)  ; 设置列表项的高度.
+        this.listPreset.GetPos(&xListPreset, &yListPreset, &wListPreset, &hListPreset)
+        this.listPreset.Move(, yBtnAddRule + (hBtnAddRule - hListPreset) / 2,)
+
+
         ;! 计算除按钮和空白区域尺寸外剩余的尺寸
         remainH := viewHight - (hBtnAddRule + wMarginY) * 2 - wMarginY * 3
 
@@ -238,6 +254,8 @@ class UIBatchReName {
         this.listRuleView.Modify(index, "Check") ; 默认勾选
         ; 更新两个ListView
         this.Update(true)
+        ; 取消对 `保存规则` 按钮的禁用
+        this.btnSavePreset.Opt("-Disabled")
     }
 
     /**
@@ -270,6 +288,12 @@ class UIBatchReName {
 
         ; 更新两个ListView
         this.Update(true)
+
+        ; 判断规则列表是否为空
+        if (!this.rules.Length) {
+            ; 添加对 `保存规则` 按钮的禁用
+            this.btnSavePreset.Opt("+Disabled")
+        }
     }
 
     ;* 上移规则
@@ -385,6 +409,22 @@ class UIBatchReName {
         }
         this.listRuleView.Delete()
         this.Update(true)
+
+        ; 添加对 `保存规则` 按钮的禁用
+        this.btnSavePreset.Opt("+Disabled")
+    }
+
+    ;* 保存预设
+    SavePreset() {
+        inputBoxObj := InputBox("请输入预设名称：", "创建预设", "w200 h90")
+        if (inputBoxObj.Result == "Cancel") {
+            return
+        }
+        preset := {
+            name: inputBoxObj.Value,
+            rules: this.rules
+        }
+        Console.Debug("准备保存预设：", preset)
     }
 
     ;*更新规则ListView
@@ -740,7 +780,7 @@ class UIBatchReName {
         ; 显示窗口
         if (!this.isShow) {
             ; 显示窗口
-            this.gui.Show('AutoSize Center')
+            this.gui.Show('w800 Center')
         } else {
             ; 并且激活窗口
             WinActivate(this.gui)
@@ -802,6 +842,10 @@ class UIRuleEdit {
     tabWidth := 420
     editRuleIndex := 0 ; 当前编辑的规则索引
 
+    gapX := 8
+    gapY := 6
+
+    DPIScale := A_ScreenDPI / 96
 
     /**
      * 
@@ -811,8 +855,8 @@ class UIRuleEdit {
         this.parent := parent
         this.gui := Gui("+Owner" parent.gui.Hwnd " +OwnDialogs ", "规则")
         this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
-        this.gui.MarginX := 8
-        this.gui.MarginY := 6
+        this.gui.MarginX := this.gapX
+        this.gui.MarginY := this.gapY
 
         ; Console.Debug("准备定义选项卡")
 
@@ -845,7 +889,7 @@ class UIRuleEdit {
 
             ; "位置" 选项：第二列
             ; "位置" 相关附属
-            this.gui.AddEdit("x" 168 " y" 170 " w60  Section")
+            this.Ctl_Insert_Position_Index_AnchorIndex_Edit := this.gui.AddEdit("x" 168 " y" 170 " w60  Section")
             this.Ctl_Insert_Position_Index_AnchorIndex := this.gui.AddUpDown("Range1-2147483647 vInsert_Position_Index_AnchorIndex", 1)
             this.Ctl_Insert_Position_Index_AnchorIndex.OnEvent('Change', (*) => this.Ctl_Insert_Position_Index.Value := true)
             this.Ctl_Insert_Position_Index_ReverseIndex := this.gui.AddCheckbox("x+m" " yp" " hp w80 vInsert_Position_Index_ReverseIndex", "从右到左")
@@ -904,7 +948,7 @@ class UIRuleEdit {
         {
             this.gui.AddGroupBox("w" this.tabWidth " r12", '')
 
-            this.gui.AddGroupBox("xp" 15 " yp" 15 " r10.6 w210", '插入位置：')
+            this.gui.AddGroupBox("x" 32 " y" 75 " r10.6 w230", '插入位置：')
             ; 位置设置
             this.Ctl_Serialize_Position_Prefix := this.gui.AddRadio("xp" 10 " yp" 25 " vSerialize_Position_Prefix Group", '前缀')
             this.Ctl_Serialize_Position_Prefix.Value := 1
@@ -920,10 +964,10 @@ class UIRuleEdit {
 
             ; 位置设置：第二列
             ; 位置相关附属
-            this.gui.AddEdit("x" 136 - 28 " y" 153 " w50 Section")
+            this.gui.AddEdit("x" 110 " y" 157 " w50 Section")
             this.Ctl_Serialize_Position_Index_AnchorIndex := this.gui.AddUpDown("Range1-2147483647 vSerialize_Position_Index_AnchorIndex", 1)
             this.Ctl_Serialize_Position_Index_AnchorIndex.OnEvent('Change', (*) => this.Ctl_Serialize_Position_Index.Value := true)
-            this.Ctl_Serialize_Position_Index_ReverseIndex := this.gui.AddCheckbox("x+m" " yp" " hp w70 vSerialize_Position_Index_ReverseIndex", "从右到左")
+            this.Ctl_Serialize_Position_Index_ReverseIndex := this.gui.AddCheckbox("x+m" " yp" " hp w80 vSerialize_Position_Index_ReverseIndex", "从右到左")
             this.Ctl_Serialize_Position_Index_ReverseIndex.OnEvent("Click", (*) => this.Ctl_Serialize_Position_Index_ReverseIndex.Value ? this.Ctl_Serialize_Position_Index.Value := true : "")
             ; "到文本前" 相关附属
             this.Ctl_Serialize_Position_Before_AnchorText := this.gui.AddEdit("xs" 23 " y+" 3.5 " w100 vSerialize_Position_Before_AnchorText")
@@ -933,7 +977,7 @@ class UIRuleEdit {
             this.Ctl_Serialize_Position_After_AnchorText.OnEvent("Change", (*) => this.Ctl_Serialize_Position_After.Value := true)
 
             ; 序列设置
-            this.gui.AddGroupBox("x" 250 + 4 " y" 70 " r10.6 w170", '序列位置：')
+            this.gui.AddGroupBox("x" 274 " y" 75 " r10.6 w150", '序列位置：')
 
             this.gui.AddText("xp" 10 " yp" 27 " Section", "起始值：")
             this.gui.AddEdit("x+m yp-" 2 " w50")
@@ -1039,7 +1083,6 @@ class UIRuleEdit {
      * @param {Integer} Height 窗口高度
      */
     OnWindowResize(guiObj, MinMax, wWidth, wHeight) {
-        Critical "on"
         ; 如果窗口被最小化 (-1)，则无需调整控件，直接返回
         if (MinMax == -1)
             return
@@ -1048,8 +1091,34 @@ class UIRuleEdit {
         wMarginX := this.gui.MarginX
         wMarginY := this.gui.MarginY
 
+        ;* 调整"插入"Tab下的第二列
+        {
+            gap := 4
+            this.Ctl_Insert_Position_Index.GetPos(&xPI, &yPI, &wPI, &hPI)
+            this.Ctl_Insert_Position_Before.GetPos(&xPB, &yPB, &wPB, &hPB)
+            this.Ctl_Insert_Position_After.GetPos(&xPA, &yPA, &wPA, &hPA)
+            this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(, , &wPIAE, &hPIAE)
+            xUnify := xPB + wPB + gap
+            this.Ctl_Insert_Position_Index_AnchorIndex_Edit.Move(xUnify, yPI + (hPI - hPIAE) / 2)
+            this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(&xPIAE, &yPIAE, &wPIAE, &hPIAE)
+            this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(, , &wPIA, &hPIA)
+            this.Ctl_Insert_Position_Index_AnchorIndex.Move(xPIAE + wPIAE, yPIAE)
+
+            this.Ctl_Insert_Position_Index_ReverseIndex.GetPos(, , , &hPIR)
+            this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(&xPIA, &yPIA, &wPIA, &hPIA)
+            this.Ctl_Insert_Position_Index_ReverseIndex.Move(xPIA + wPIA + gap, yPIA + (hPIA - hPIR) / 2)
+
+            this.Ctl_Insert_Position_Before_AnchorText.GetPos(, , , &hPBA)
+            this.Ctl_Insert_Position_Before_AnchorText.Move(xUnify, yPB + (hPB - hPBA) / 2)
+
+            this.Ctl_Insert_Position_After_AnchorText.GetPos(, , , &hPAA)
+            this.Ctl_Insert_Position_After_AnchorText.Move(xUnify, yPA + (hPA - hPAA) / 2)
+        }
+
+        ;* 调整底部按钮
         this.btnCancel.GetPos(&bclX, &bclY, &bclW, &bclH)
-        bottomButtonY := wClientH - wMarginY - bclH ; 底部按钮的统一Y
+        ; 底部按钮的统一Y值
+        bottomButtonY := wClientH - wMarginY - bclH
         this.btnCancel.Move(wClientW - wMarginX - bclW, bottomButtonY)
 
         this.btnCancel.GetPos(&bclX, &bclY, &bclW, &bclH)

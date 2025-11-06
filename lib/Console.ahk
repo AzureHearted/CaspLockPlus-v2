@@ -1,6 +1,9 @@
 #Requires AutoHotkey v2.0
 #Include <JSON>
 
+; 防止中文被转义
+JSON.EscapeUnicode := false
+
 /**
  * 控制台类
  */
