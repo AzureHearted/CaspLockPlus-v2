@@ -40,6 +40,9 @@ class UIBatchReName {
     /** @type {Array<ReNameFile>} */
     files := []
 
+    ; 预设目录（相对于脚本所在目录）
+    presetDir := "\ReName\preset"
+
     DPIScale := A_ScreenDPI / 96
 
     ; 构造
@@ -70,15 +73,16 @@ class UIBatchReName {
         this.btnDownRule := this.gui.AddButton("x+m ys hp vDownRule", "下移")
         this.btnDownRule.OnEvent('Click', (*) => this.DownRule())
         ; 预设选项
-        ; Console.Debug("DPIScale：" this.DPIScale)
         this.gui.AddText("x+m" 4 " yp" 4, "预设：")
-        this.listPreset := this.gui.AddDropDownList("x+m ys", ["预设1", "预设2"])
-        ; this.gui.AddText("x+m yp+" 3 * this.DPIScale " h" 20 * this.DPIScale, "预设：")
-        ; todo 这里再Windows11显示存在bug
+        this.listPreset := this.gui.AddDropDownList("x+m ys")
+        this.listPreset.OnEvent("Change", (ctrlObj, info) => this.OnPresetChange(ctrlObj, info))
+
         this.btnSavePreset := this.gui.AddButton("x+m ys r0.75 +Disabled", "保存预设")
         this.btnSavePreset.OnEvent("Click", (*) => this.SavePreset())
+        ; this.btnSavePreset.OnEvent("ContextMenu",(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y)=>this.OnBtnSavePresetContextMenu())
         this.btnDeletePreset := this.gui.AddButton("x+m hp +Disabled", "删除预设")
-        this.btnManagePreset := this.gui.AddButton("x+m hp", "管理预设")
+        this.btnDeletePreset.OnEvent("Click", (*) => this.DeletePreset())
+        this.btnManagePreset := this.gui.AddButton("x+m hp", "预设重命名")
 
         ;清空规则按钮
         this.btnClearRule := this.gui.AddButton("x+m ys r0.75 vClearRule", "清空规则")
@@ -125,9 +129,12 @@ class UIBatchReName {
         this.gui.OnEvent("Close", (*) => this.Close())
         this.gui.OnEvent("DropFiles", (GuiObj, GuiCtrlObj, FileArray, X, Y) => this.OnDropFiles(GuiCtrlObj, FileArray, X, Y))
 
-        ; 注册窗口热键
+        ;* 注册窗口热键
         HotIfWinActive("ahk_id " this.gui.Hwnd)
-        callback(HotkeyName) {
+
+        ; 全选文件列表p
+        Hotkey("^a", HotKeyCtrlACallback)
+        HotKeyCtrlACallback(HotkeyName) {
             ; 获取焦点控件的句柄
             hwnd := ControlGetFocus()
             ; Console.Debug("全选列表", hwnd, this.listFileView.Hwnd)
@@ -146,7 +153,15 @@ class UIBatchReName {
                 }
             }
         }
-        Hotkey("^A", callback)
+
+        ; 保存预设
+        Hotkey("^s", HotKeyCtrlSCallback)
+        HotKeyCtrlSCallback(HotkeyName) {
+            if (this.rules.Length) {
+                this.SavePreset()
+            }
+        }
+
         HotIf()
 
     }
@@ -416,7 +431,12 @@ class UIBatchReName {
 
     ;* 保存预设
     SavePreset() {
-        inputBoxObj := InputBox("请输入预设名称：", "创建预设", "w200 h90")
+        ; this.gui.GetPos(&xGui, &yGui, &wGui, &hGui)
+        ; this.gui.GetClientPos(&xGui, &yGui, &wGui, &hGui)
+        WinGetClientPos(&xGui, &yGui, &wGui, &hGui, "ahk_id" this.gui.Hwnd)
+        ; WinGetPos(&xGui, &yGui, &wGui, &hGui, "ahk_id" this.gui.Hwnd)
+
+        inputBoxObj := InputBox("请输入预设名称：", "创建预设", "w200  h90  x" xGui + (wGui - 200 * this.DPIScale) / 2 " y" yGui, "新预设")
         if (inputBoxObj.Result == "Cancel") {
             return
         }
@@ -424,7 +444,119 @@ class UIBatchReName {
             name: inputBoxObj.Value,
             rules: this.rules
         }
-        Console.Debug("准备保存预设：", preset)
+
+        writeTo := A_ScriptDir this.presetDir "\" preset.name ".json"
+        if (FileExist(writeTo)) {
+            op := MsgBox("预设 “" preset.name "” 已存在，确认覆盖？", "提示", "YesNo Owner" this.gui.Hwnd)
+            if (op == "No") {
+                return
+            }
+        }
+
+        ; Console.Debug("预设准备写入：" writeTo)
+        SplitPath(writeTo, , &dir)
+        ; 如果目录不存在先创建目录
+        if (!DirExist(dir))
+            DirCreate(dir)
+        ; 写入预设到json文件
+        writeCount := JSON.DumpFile(preset, writeTo, true, "UTF-8")
+        ; Console.Debug("保存成功，共写入：" writeCount "个字符")
+        ; 重新加载预设名称列表
+        this.ReLoadPresetNameList()
+        ; 设定刚创建预设为当前预设
+        this.nowPresetName := preset.name
+    }
+
+    ;* 加载预设名称列表
+    ReLoadPresetNameList() {
+        dir := A_ScriptDir this.presetDir
+        list := []
+        loop files dir "\*.json", "F" {
+            SplitPath(A_LoopFileFullPath, , , , &presetName)
+            list.Push(presetName)
+        }
+        this.listPreset.Delete()
+        this.listPreset.Add(list)
+    }
+
+    /** @type {String} 当前预设名称 */
+    nowPresetName {
+        get {
+            ; 返回当前预设名
+            ; Console.Debug("读取当前预设名称")
+            return this.listPreset.Text
+        }
+        set {
+            ; 加载预设
+            if (IsSet(Value) && Value) {
+                Console.Debug("加载预设：" Value)
+                ; Console.Debug(ctrlObj.Text "(" presetName ")")
+                path := A_ScriptDir this.presetDir "\" Value ".json"
+                ; Console.Debug("预设路径:" path)
+                if (FileExist(path)) {
+                    ; 加载预设
+                    /** @type {Map} */
+                    jsonMap := JSON.LoadFile(path, "UTF-8") ;? `JSON.LoadFile` 和 `JSON..Parse` 解析出来的结果是一个 `Map` 对象
+                    ; Console.Debug("加载预设 " Type(jsonMap), jsonMap)
+                    ; 清空原有规则
+                    this.ClearRule()
+                    /** @type {Map} */
+                    rawRules := jsonMap.Get("rules")
+                    ; 将原始对象转为Rule对象
+                    for (index, rawRule in rawRules) {
+                        ; Console.Debug(k, rawRule)
+                        rule := RenameRule.%rawRule.Get("Type") "Rule"%(rawRule)
+                        this.AddRule(rule)
+                    }
+                    this.listPreset.Choose(Value)
+                    ; 成功加载预设后允许使用删除预设操作
+                    this.btnDeletePreset.Opt("-Disabled")
+                }
+            } else {
+                Console.Debug("预设加载失败：" Value)
+                ; 重新加载预设列表
+                this.ReLoadPresetNameList()
+                ; 失败则禁用删除预设按钮
+                this.btnDeletePreset.Opt("+Disabled")
+            }
+        }
+    }
+
+    /**
+     * ! 当用户选择了预设时的回调 (预设加载)
+     * @param {Gui.DropDownList} ctrlObj 控件对象
+     * @param {String} presetName 预设名
+     */
+    OnPresetChange(ctrlObj, presetName) {
+        this.nowPresetName := this.listPreset.Text
+    }
+
+    ;* 删除预设
+    DeletePreset() {
+        ; Console.Debug("准备删除预设：" this.nowPresetName)
+        ; 获取预设名称
+        presetName := this.nowPresetName
+        ; 获取预设下标
+        index := this.listPreset.Value
+
+        path := A_ScriptDir this.presetDir "\" presetName ".json"
+        if (FileExist(path)) {
+            op := MsgBox("确认删除预设 “" presetName "” ", "提示", "YesNo Owner" this.gui.Hwnd)
+            Console.Debug("用户确认删除：" op)
+            if (op == "No")
+                return
+
+            ; 先去除预设列表里面的项目
+            if (index) {
+                this.nowPresetName := ""
+                this.listPreset.Delete(index)
+            }
+
+            ; 规则文件丢入回收站
+            FileRecycle(path)
+        } else {
+            this.btnDeletePreset.Opt("+Disabled")
+        }
     }
 
     ;*更新规则ListView
@@ -735,31 +867,29 @@ class UIBatchReName {
             return
         }
 
-        for (file, index in this.files) {
-            ; 跳过冲突项 NewAttribute 不为空就说明冲突
-            Console.Debug("重命名循环：" index ' = ' A_Index)
-            ; return
-            if (file.NewAttribute) {
+        for (index, fileItem in this.files) {
+            ;* 跳过冲突项 NewAttribute 不为空就说明冲突
+            if (fileItem.NewAttribute) {
                 continue
             }
 
             try {
-                if (file.IsDirectory) {
+                if (fileItem.IsDirectory) {
                     ; 对目录的重命名
-                    DirMove(file.Path, file.NewPath, "R")
+                    DirMove(fileItem.Path, fileItem.NewPath, "R")
                     ; 重命名完成后判断是否成功
-                    if (DirExist(file.NewPath)) {
+                    if (DirExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
-                        file.__New(file.NewPath)
+                        fileItem.__New(fileItem.NewPath)
                     }
                 } else {
                     ; 对文件的重命名
-                    ; Console.Debug("即将重命名：" file.Path " => " file.NewPath)
-                    FileMove(file.Path, file.NewPath)
+                    ; Console.Debug("即将重命名：" fileItem.Path " => " fileItem.NewPath)
+                    FileMove(fileItem.Path, fileItem.NewPath)
                     ; 重命名完成后判断是否成功
-                    if (FileExist(file.NewPath)) {
+                    if (FileExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
-                        file.__New(file.NewPath)
+                        fileItem.__New(fileItem.NewPath)
                     }
                 }
             } catch as e {
@@ -772,6 +902,8 @@ class UIBatchReName {
 
     ; 显示窗口
     Show() {
+        ; 加载预设列表
+        this.ReLoadPresetNameList()
         ; 获取文件列表
         filePaths := this.GetFiles()
 
@@ -1540,7 +1672,26 @@ class RenameRule {
         ; 忽略大小写
         IgnoreCase := false
         ; 全字匹配
-        IsExactMatch := true
+        IsExactMatch := false
+
+        /**
+         * * 构造函数
+         * @param {Map<RenameRule.InsertRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
+         */
+        __New(rawRule?) {
+
+            if (IsSet(rawRule)) {
+                this.Content := rawRule.Get("Content", "")
+                this.Position := rawRule.Get("Position", "Preset")
+                this.AnchorIndex := rawRule.Get("AnchorIndex", 1)
+                this.ReverseIndex := rawRule.Get("ReverseIndex", false)
+                this.BeforeAnchorText := rawRule.Get("BeforeAnchorText", "")
+                this.AfterAnchorText := rawRule.Get("AfterAnchorText", "")
+                this.IgnoreCase := rawRule.Get("IgnoreCase", false)
+                this.IsExactMatch := rawRule.Get("IsExactMatch", false)
+                this.IgnoreExt := rawRule.Get("IgnoreExt", true)
+            }
+        }
 
         /** @type {String} 规则描述*/
         Description {
@@ -1595,7 +1746,23 @@ class RenameRule {
         /** 忽略大小写 */
         IgnoreCase := false
         /** 全字匹配 */
-        IsExactMatch := true
+        IsExactMatch := false
+
+        /**
+         * * 构造函数
+         * @param {Map<RenameRule.ReplaceRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
+         */
+        __New(rawRule?) {
+
+            if (IsSet(rawRule)) {
+                this.Match := rawRule.Get("Match", "")
+                this.ReplaceTo := rawRule.Get("ReplaceTo", "")
+                this.Range := rawRule.Get("Range", "All")
+                this.IgnoreCase := rawRule.Get("IgnoreCase", false)
+                this.IsExactMatch := rawRule.Get("IsExactMatch", false)
+                this.IgnoreExt := rawRule.Get("IgnoreExt", true)
+            }
+        }
 
         /** @type {String} 规则描述*/
         Description {
@@ -1633,7 +1800,22 @@ class RenameRule {
         /** 忽略大小写*/
         IgnoreCase := false
         /** 全字匹配 */
-        IsExactMatch := true
+        IsExactMatch := false
+
+        /**
+         * * 构造函数
+         * @param {Map<RenameRule.RemoveRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
+         */
+        __New(rawRule?) {
+
+            if (IsSet(rawRule)) {
+                this.Match := rawRule.Get("Match", "")
+                this.Range := rawRule.Get("Range", "All")
+                this.IgnoreCase := rawRule.Get("IgnoreCase", false)
+                this.IsExactMatch := rawRule.Get("IsExactMatch", false)
+                this.IgnoreExt := rawRule.Get("IgnoreExt", true)
+            }
+        }
 
         /** @type {String} 规则描述*/
         Description {
@@ -1664,15 +1846,15 @@ class RenameRule {
     class SerializeRule extends RenameRule.BaseRule {
         Type := "Serialize"
         /** 要插入序列的位置 'Prefix' | 'Suffix' | 'Index' | 'After' | 'Before' | 'Replace' */
-        Position := 'Prefix'
+        Position := "Prefix"
         ; Index的锚点位置索引
         AnchorIndex := 1
         ; Index是否反向(false为：从左到右)
         ReverseIndex := false
         ; Before锚点文本
-        BeforeAnchorText := ''
+        BeforeAnchorText := ""
         ; After的锚点文本
-        AfterAnchorText := ''
+        AfterAnchorText := ""
         /** 序列起始值 */
         SequenceStart := 1
         /** 序列步长 */
@@ -1684,7 +1866,30 @@ class RenameRule {
         /** 忽略大小写 (当 anchorText 生效时, 对 anchorText 也生效) */
         IgnoreCase := false
         /** 全字匹配 (当 anchorText 生效时, 对 anchorText 也生效) */
-        IsExactMatch := true
+        IsExactMatch := false
+
+        /**
+         * * 构造函数
+         * @param {Map<RenameRule.SerializeRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
+         */
+        __New(rawRule?) {
+
+            if (IsSet(rawRule)) {
+                this.Position := rawRule.Get("Position", "Prefix")
+                this.AnchorIndex := rawRule.Get("AnchorIndex", 1)
+                this.ReverseIndex := rawRule.Get("ReverseIndex", false)
+                this.BeforeAnchorText := rawRule.Get("BeforeAnchorText", "")
+                this.AfterAnchorText := rawRule.Get("AfterAnchorText", "")
+                this.SequenceStart := rawRule.Get("SequenceStart", 1)
+                this.SequenceStep := rawRule.Get("SequenceStep", 1)
+                this.PaddingCount := rawRule.Get("PaddingCount", -1)
+                this.ResetFolderChanges := rawRule.Get("ResetFolderChanges", true)
+                this.IgnoreCase := rawRule.Get("IgnoreCase", false)
+                this.IsExactMatch := rawRule.Get("IsExactMatch", false)
+                this.IgnoreExt := rawRule.Get("IgnoreExt", true)
+
+            }
+        }
 
 
         /** @type {String} 规则描述*/
@@ -1760,6 +1965,29 @@ class RenameRule {
             Direction: 'Left'
         }
 
+        /**
+         * * 构造函数
+         * @param {Map<RenameRule.FillRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
+         */
+        __New(rawRule?) {
+
+            if (IsSet(rawRule)) {
+                ZeroPadding := rawRule.Get("ZeroPadding", { Enable: false, Length: 3 })
+                this.ZeroPadding.Enable := ZeroPadding.Get("ZeroPadding", false)
+                this.ZeroPadding.Length := ZeroPadding.Get("Length", 3)
+
+                this.RemoveZeroPadding := rawRule.Get("RemoveZeroPadding", false)
+
+                TextPadding := rawRule.Get("TextPadding", { Enable: false, Character: "", Length: 3, Direction: "Left" })
+                this.TextPadding.Enable := TextPadding.Get("Enable", false)
+                this.TextPadding.Character := TextPadding.Get("Character", "")
+                this.TextPadding.Length := TextPadding.Get("Length", 3)
+                this.TextPadding.Direction := TextPadding.Get("Direction", "Left")
+
+                this.IgnoreExt := rawRule.Get("IgnoreExt", true)
+            }
+        }
+
         /** @type {String} 规则描述*/
         Description {
             get {
@@ -1801,7 +2029,22 @@ class RenameRule {
         /** 忽略大小写 */
         IgnoreCase := false
         /** 全字匹配 */
-        IsExactMatch := true
+        IsExactMatch := false
+
+
+        /**
+         * * 构造函数
+         * @param {Map<RenameRule.RegexRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
+         */
+        __New(rawRule?) {
+            if (IsSet(rawRule)) {
+                this.Regex := rawRule.Get("Regex", "")
+                this.ReplaceTo := rawRule.Get("ReplaceTo", "")
+                this.IgnoreCase := rawRule.Get("IgnoreCase", false)
+                this.IsExactMatch := rawRule.Get("IsExactMatch", false)
+                this.IgnoreExt := rawRule.Get("IgnoreExt", true)
+            }
+        }
 
         /** @type {String} 规则描述*/
         Description {
@@ -1827,6 +2070,17 @@ class RenameRule {
         Type := "Extension"
         /** 新扩展名 (无需添加.符号) */
         NewExt := ""
+
+        /**
+         * * 构造函数
+         * @param {Map<RenameRule.ExtensionRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
+         */
+        __New(rawRule?) {
+            if (IsSet(rawRule)) {
+                this.NewExt := rawRule.Get("NewExt", "")
+                this.IgnoreExt := rawRule.Get("IgnoreExt", false)
+            }
+        }
 
         /** @type {String} 规则描述*/
         Description {
