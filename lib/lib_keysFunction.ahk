@@ -50,7 +50,7 @@
                     }
                     ; 超出的长度用……拼接
                     ; 显示剪贴的内容
-                    ShowToolTips(preview, 1500, 20)
+                    ShowToolTips(preview, 1000, 20)
                     ; Console.Debug('DataType:' . DataType)
                     ; ShowToolTips('复制成功！')
                     OnClipboardChange(handle, 0)

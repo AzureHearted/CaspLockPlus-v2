@@ -872,32 +872,17 @@ class BatchReName {
         }
     }
 
-
     ;* 移除所选文件
     RemoveSelectedFile(*) {
         listIndex := this.GetListViewIndexList(this.listFileView, , true)
-        ; Console.Debug("获取到的所选项的索引：", listIndex)
 
         for (index in listIndex) {
-
             this.files.RemoveAt(index)
-
             this.listFileView.Delete(index)
         }
 
-        ; 重新设置索引
-        ; loop this.listRuleView.GetCount() {
-        ;     this.listRuleView.Modify(A_Index, , A_Index)
-        ; }
-
         ; 更新两个ListView
         this.Update(true)
-
-        ; 判断规则列表是否为空
-        ; if (!this.files.Length) {
-        ;     ; 添加对 `保存规则` 按钮的禁用
-        ;     this.btnSavePreset.Opt("+Disabled")
-        ; }
     }
 
     /**
