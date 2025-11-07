@@ -62,7 +62,7 @@ class UIBatchReName {
         ;* 顶部按钮
         ; 新增规则按钮
         this.btnAddRule := this.gui.AddButton("r0.75 vAddRule Section", "新增")
-        this.btnAddRule.OnEvent("Click", (*) => this.ShowRuleEdit())
+        this.btnAddRule.OnEvent("Click", (*) => this.ShowRuleEdit("create", true))
         ; 删除规则按钮
         this.btnDeleteRule := this.gui.AddButton("x+m ys hp vDeleteRule", "移除")
         this.btnDeleteRule.OnEvent("Click", (*) => this.DeleteRule())
@@ -489,8 +489,7 @@ class UIBatchReName {
         set {
             ; 加载预设
             if (IsSet(Value) && Value) {
-                Console.Debug("加载预设：" Value)
-                ; Console.Debug(ctrlObj.Text "(" presetName ")")
+                ; Console.Debug("加载预设：" Value)
                 path := A_ScriptDir this.presetDir "\" Value ".json"
                 ; Console.Debug("预设路径:" path)
                 if (FileExist(path)) {
@@ -504,7 +503,7 @@ class UIBatchReName {
                     rawRules := jsonMap.Get("rules")
                     ; 将原始对象转为Rule对象
                     for (index, rawRule in rawRules) {
-                        ; Console.Debug(k, rawRule)
+                        ; Console.Debug("规则类型：" Type(rawRule), rawRule)
                         rule := RenameRule.%rawRule.Get("Type") "Rule"%(rawRule)
                         this.AddRule(rule)
                     }
@@ -583,36 +582,24 @@ class UIBatchReName {
     OnListRuleViewDoubleClick(index) {
         if (index) {
             tabIndex := this.RuleEdit.types.IndexOf(RuleTypeReverseMap.Get(this.rules[index].Type))
-            Console.Debug(tabIndex)
-            ; 触发编辑规则
-            if (!this.isOpenRuleEdit) {
-                ; Console.Debug("显示子窗口")
-                this.isOpenRuleEdit := true
-                ; 先指定要编辑的规则索引
-                this.RuleEdit.editRuleIndex := index
-                this.RuleEdit.nowTabIndex := tabIndex
-                this.RuleEdit.Show(mode := "edit", true)
-            } else {
-                this.RuleEdit.editRuleIndex := index
-                this.RuleEdit.nowTabIndex := tabIndex
-                this.RuleEdit.Activate(mode := "edit", true)
-            }
+            this.RuleEdit.nowTabIndex := tabIndex
+            this.RuleEdit.editRuleIndex := index
+            this.ShowRuleEdit("edit", true)
         } else {
             ; 触发创建规则
-            this.ShowRuleEdit()
+            this.ShowRuleEdit("create", true)
         }
 
     }
 
-    ;* 显示规则编辑窗口
-    ShowRuleEdit() {
-        if (!this.isOpenRuleEdit) {
-            ; Console.Debug("显示子窗口")
-            this.isOpenRuleEdit := true
-            this.RuleEdit.Show(mode := "create")
-        } else {
-            this.RuleEdit.Activate(mode := "create")
-        }
+    /**
+     * * 显示规则编辑窗口
+     * @param {"create"|"edit"} mode 模式
+     * @param {Integer} disabledParent 禁止父窗口操作
+     */
+    ShowRuleEdit(mode := "create", disabledParent := false) {
+        this.RuleEdit.Show(mode, disabledParent)
+
     }
 
     /**
@@ -881,6 +868,7 @@ class UIBatchReName {
                     if (DirExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
                         fileItem.__New(fileItem.NewPath)
+                        this.listFileView.Modify(index, , fileItem.Name, fileItem.NewName, fileItem.Path)
                     }
                 } else {
                     ; 对文件的重命名
@@ -890,6 +878,7 @@ class UIBatchReName {
                     if (FileExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
                         fileItem.__New(fileItem.NewPath)
+                        this.listFileView.Modify(index, , fileItem.Name, fileItem.NewName, fileItem.Path)
                     }
                 }
             } catch as e {
@@ -915,7 +904,10 @@ class UIBatchReName {
             this.gui.Show('w800 Center')
         } else {
             ; 并且激活窗口
-            WinActivate(this.gui)
+            WinActivate("ahk_id" this.gui.Hwnd)
+            if (this.RuleEdit.isShow) {
+                WinActivate("ahk_id" this.RuleEdit.gui.Hwnd)
+            }
         }
 
         ; 如果选中的文件列表数量>0则重新载入文件
@@ -960,6 +952,7 @@ class UIBatchReName {
 class UIRuleEdit {
     /** @type {Gui} */
     gui := ''
+    isShow := false
     mode := "create"
     nowTabIndex := 1
     types := [
@@ -985,7 +978,7 @@ class UIRuleEdit {
      */
     __New(parent) {
         this.parent := parent
-        this.gui := Gui("+Owner" parent.gui.Hwnd " +OwnDialogs ", "规则")
+        this.gui := Gui(, "规则")
         this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
         this.gui.MarginX := this.gapX
         this.gui.MarginY := this.gapY
@@ -1513,6 +1506,7 @@ class UIRuleEdit {
                 this.%"Ctl_Fill_TextPadding_Direction_" rule.TextPadding.Direction% := 1
                 this.Ctl_Fill_IgnoreExt.Value := rule.IgnoreExt
             case "Regex":
+                Console.Debug(rule)
                 this.Ctl_Regex_Regex.Value := rule.Regex
                 this.Ctl_Regex_ReplaceTo.Value := rule.ReplaceTo
                 this.Ctl_Regex_IgnoreCase.Value := rule.IgnoreCase
@@ -1563,47 +1557,25 @@ class UIRuleEdit {
         ; 判断是否禁止父窗口操作
         if (disabledParent)
             this.parent.gui.Opt("+Disabled")
-        ; this.gui.Show(" Center")
+
+        this.gui.Opt("+Owner" this.parent.gui.Hwnd)
         this.gui.Show()
+        this.isShow := true
 
-        if (mode := "create") {
+        if (mode == "create") {
             this.typeTab.Choose(this.nowTabIndex)
-        } else if (mode := "edit") {
+        } else if (mode == "edit") {
             if (!this.editRuleIndex) {
                 Console.Debug("没有指定要编辑的规则索引")
                 return
             }
             ; 拿到要编辑的规则
             rule := this.parent.rules[this.editRuleIndex]
+            ; Console.Debug("Show编辑规则：" this.editRuleIndex " , ", rule)
             this.typeTab.Choose(this.nowTabIndex)
             this.MapRuleGUI(rule)
         }
 
-    }
-
-    /**
-     * 激活窗口
-     * @param {"create"|"edit"} mode 模式
-     * @param {Integer}  disabledParent 显示窗口期间是否禁止父窗口操作
-     */
-    Activate(mode := "create", disabledParent := false) {
-        this.mode := mode ; 记录模式
-        this.UpdateMode()
-        ; 判断是否禁止父窗口操作
-        if (disabledParent)
-            this.parent.gui.Opt("+Disabled")
-        WinActivate(this.gui)
-        ; Console.Debug("当前类型：" this.types.Get(this.nowTabIndex))
-
-        if (mode := "edit") {
-            if (!this.editRuleIndex) {
-                Console.Debug("没有指定要编辑的规则索引")
-                return
-            }
-            ; 拿到要编辑的规则
-            rule := this.parent.rules[this.editRuleIndex]
-            this.MapRuleGUI(rule)
-        }
     }
 
     ; 根据模式进行相应调整
@@ -1618,10 +1590,14 @@ class UIRuleEdit {
     }
 
     Close() {
-        this.parent.isOpenRuleEdit := false
         this.gui.Hide()
-        WinActivate(this.parent.gui)
+        this.isShow := false
+
         this.parent.gui.Opt("-Disabled")
+        parentHwnd := this.parent.gui.Hwnd
+        if (WinExist("ahk_id" parentHwnd)) {
+            WinActivate("ahk_id" parentHwnd)
+        }
         ; 关闭窗口后将"编辑索引"置为0
         this.editRuleIndex := 0
         return 1
@@ -2482,10 +2458,16 @@ class ReName {
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
 
-            test .= rule.NewExt ? "." rule.NewExt : ""
+            if (rule.ignoreExt) {
+                ; 如果忽略拓展名则直接在原扩展名后面拼接新扩展名
+                test .= "." rule.NewExt
+            } else {
+                ; 如果不忽略则替换原本的扩展名
+                SplitPath(test, , , , &nameNoExt)
+                test := nameNoExt "." rule.NewExt
+            }
 
-            ; 最后判断是否加上扩展名
-            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            item.NewName := test
         }
     }
 }
