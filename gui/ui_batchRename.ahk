@@ -868,7 +868,7 @@ class UIBatchReName {
                     if (DirExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
                         fileItem.__New(fileItem.NewPath)
-                        this.listFileView.Modify(index, , fileItem.Name, fileItem.NewName, fileItem.Path)
+                        this.listFileView.Modify(index, , , fileItem.Name, fileItem.NewName, fileItem.Path)
                     }
                 } else {
                     ; 对文件的重命名
@@ -878,13 +878,15 @@ class UIBatchReName {
                     if (FileExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
                         fileItem.__New(fileItem.NewPath)
-                        this.listFileView.Modify(index, , fileItem.Name, fileItem.NewName, fileItem.Path)
+                        this.listFileView.Modify(index, , , fileItem.Name, fileItem.NewName, fileItem.Path)
                     }
                 }
             } catch as e {
-
+                Console.Error(e)
             }
         }
+        ; 完成后刷新两视图
+        this.UpdateFileListView()
 
         MsgBox("✔重命名成功！（成功重命名" this.files.Length "项）", "提示", "Owner" this.gui.Hwnd)
     }
@@ -1554,17 +1556,20 @@ class UIRuleEdit {
     Show(mode := "create", disabledParent := false) {
         this.mode := mode ; 记录模式
         this.UpdateMode()
-        ; 判断是否禁止父窗口操作
-        if (disabledParent)
-            this.parent.gui.Opt("+Disabled")
 
         this.gui.Opt("+Owner" this.parent.gui.Hwnd)
         this.gui.Show()
         this.isShow := true
+        ; 禁止父窗口操作
+        ; this.parent.gui.Opt("+Disabled")
+        this.parent.gui.Opt("+OwnDialogs")
+
 
         if (mode == "create") {
             this.typeTab.Choose(this.nowTabIndex)
         } else if (mode == "edit") {
+            ; 编辑模式下禁用父窗口
+            this.parent.gui.Opt("+Disabled")
             if (!this.editRuleIndex) {
                 Console.Debug("没有指定要编辑的规则索引")
                 return
@@ -1590,14 +1595,19 @@ class UIRuleEdit {
     }
 
     Close() {
+        this.parent.gui.Opt("-Disabled")
+
         this.gui.Hide()
         this.isShow := false
 
-        this.parent.gui.Opt("-Disabled")
-        parentHwnd := this.parent.gui.Hwnd
-        if (WinExist("ahk_id" parentHwnd)) {
-            WinActivate("ahk_id" parentHwnd)
-        }
+        ; this.parent.gui.Opt("-OwnDialogs")
+        ; this.parent.gui.Opt("-Parent")
+        ; this.parent.gui.Opt("-OwnDialogs")
+
+        ; parentHwnd := this.parent.gui.Hwnd
+        ; if (WinExist("ahk_id" parentHwnd)) {
+        ;     WinActivate("ahk_id" parentHwnd)
+        ; }
         ; 关闭窗口后将"编辑索引"置为0
         this.editRuleIndex := 0
         return 1
