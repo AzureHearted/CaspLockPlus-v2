@@ -7,9 +7,27 @@
  * @param {Integer} id 如果省略, 默认为 1(第一个工具提示). 否则, 请指定一个介于 1 和 20 之间的数字, 在同时使用了多个工具提示时, 用来表示要操作的工具提示窗口.
  */
 ShowToolTips(msg, duration := 1000, id := 1) {
+    static channelMap := Map()  ; 用来保存每个 id 的定时器
+
+    ; --- 先显示消息 ---
     ToolTip(msg, , , id)
-    SetTimer(() => ToolTip(, , , id), duration)
+
+    ; --- 如果该 id 已经存在定时器，则先删除它（防止重复定时） ---
+    if channelMap.Has(id) {
+        SetTimer(channelMap[id], 0)
+    }
+
+    ; --- 定义一个新的定时器，用于隐藏该 ToolTip ---
+    timerFunc := (*) => (
+        ToolTip(, , , id),  ; 清除对应 id 的 ToolTip
+        channelMap.Delete(id)  ; 从 map 移除（释放资源）
+    )
+
+    ; --- 保存并启动定时器 ---
+    channelMap[id] := timerFunc
+    SetTimer(timerFunc, -duration)
 }
+
 
 /**
  * 获取选中的文本(支持无污染剪贴板)
