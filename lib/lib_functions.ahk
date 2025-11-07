@@ -2,12 +2,13 @@
 
 /**
  * 显示ToolTips消息
- * @param msg 消息内容
- * @param duration 持续时间
+ * @param {String} msg 消息内容
+ * @param {Integer} duration 持续时间ms
+ * @param {Integer} id 如果省略, 默认为 1(第一个工具提示). 否则, 请指定一个介于 1 和 20 之间的数字, 在同时使用了多个工具提示时, 用来表示要操作的工具提示窗口.
  */
-ShowToolTips(msg, duration := 1000) {
-    ToolTip(msg)
-    SetTimer(() => ToolTip(), duration)
+ShowToolTips(msg, duration := 1000, id := 1) {
+    ToolTip(msg, , , id)
+    SetTimer(() => ToolTip(, , , id), duration)
 }
 
 /**

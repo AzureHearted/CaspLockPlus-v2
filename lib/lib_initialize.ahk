@@ -5,7 +5,8 @@ DirCreate(A_Temp '\CapsLockPlus v2')
 try {
     FileInstall('lib/WebView2/32bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_32bit.dll', 1)
     FileInstall('lib/WebView2/64bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_64bit.dll', 1)
-    FileInstall('lib/WindowSpy.exe', A_Temp '\CapsLockPlus v2\WindowSpy.exe', 1)
+    FileInstall('tools/WindowSpy.exe', A_Temp '\CapsLockPlus v2\WindowSpy.exe', 1)
+    FileInstall('tools/ReNamer.ahk', A_Temp '\CapsLockPlus v2\ReNamer.ahk', 1)
     FileInstall('res/keysMap.html', A_Temp '\CapsLockPlus v2\keysMap.html', 1)
     FileInstall('res/CapsLockPlusIcon.ico', A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico', 1)
     FileInstall('res/cancelAlwaysOnTop.png', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.png', 1)
@@ -21,10 +22,11 @@ try {
 #Include <Console>
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
-#Include ../gui/ui_batchRename.ahk
+#Include ../tools/ReNamer.ahk
 
+;! 忽略DPI缩放(必须在创建GUI之前调用)
+DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -1)
 
-; Console.Debug("测试", "文本")
 
 ; A_MaxHotkeysPerInterval和A_HotkeyInterval变量控制热键激活的速率, 超过此速率将显示警告对话框.
 A_MaxHotkeysPerInterval := 500
@@ -32,7 +34,6 @@ A_HotkeyInterval := 0
 
 ;! 确保以管理员身份运行
 full_command_line := DllCall("GetCommandLine", "str")
-; if (A_IsCompiled && !A_IsAdmin) {
 if ( not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))) {
     Console.Debug(full_command_line)
     try
@@ -53,7 +54,6 @@ if ( not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))) {
         ExitApp()
     }
 }
-; MsgBox "A_IsAdmin: " A_IsAdmin "`nCommand line: " full_command_line
 
 ;! 全局变量
 ; 用户设置的ini路径
@@ -79,7 +79,7 @@ global UISets := {
     keysMap: UIWebView('键盘映射', A_IsCompiled ? A_Temp '\CapsLockPlus v2\keysMap.html' : 'http://localhost:5173/', 1160, 380, {
         debug: (res) => Console.Debug(res)
     }),
-    batchRename: UIBatchReName()
+    batchRename: BatchReName()
 }
 
 ;* 托盘菜单

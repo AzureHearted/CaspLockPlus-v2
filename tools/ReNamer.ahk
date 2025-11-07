@@ -1,10 +1,26 @@
 #Requires AutoHotkey v2.0
-#Include <JSON>
-#Include <Array>
-#Include <StringUtils>
+
+#Include ../lib/JSON.ahk
+#Include ../lib/Array.ahk
+#Include ../lib/StringUtils.ahk
+#Include ../lib/lib_functions.ahk
+
 
 ; 防止中文被转义
 JSON.EscapeUnicode := false
+
+; 单独使用的时候取消下面这个指数然后再运行或编译
+; StartAlone()
+
+StartAlone() {
+    ; MsgBox("模式：单独启动")
+    Console.Debug("模式：单独启动")
+    ReNameUI := BatchReName()
+    ReNameUI.isCloseGuiToExitApp := true
+    ReNameUI.Show()
+
+}
+
 
 RuleTypeMap := Map(
     "插入", "Insert",
@@ -27,11 +43,14 @@ RuleTypeReverseMap := Map(
 )
 
 ;! 带GUI批量重命名
-class UIBatchReName {
+class BatchReName {
     /** @type {Gui} */
     gui := ""
+    DPIScale := A_ScreenDPI / 96
     isShow := false
     isOpenRuleEdit := false
+    ; 是否在关闭Gui的时候退出整个脚本?
+    isCloseGuiToExitApp := false
     ; 间隙大小
     gapX := 2
     gapY := 4
@@ -41,14 +60,18 @@ class UIBatchReName {
     files := []
 
     ; 预设目录（相对于脚本所在目录）
-    presetDir := "\ReName\preset"
-
-    DPIScale := A_ScreenDPI / 96
+    presetDir := A_ScriptDir "\ReName\preset"
 
     ; 构造
-    __New() {
+    __New(presetDir?) {
+        ; 设置预设目录
+        if (IsSet(presetDir))
+            this.presetDir := presetDir
 
-        this.gui := Gui('+Resize +MinSize680x400', '批量重命名')
+        ;! 忽略DPI缩放(必须在创建GUI之前调用)
+        DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -1)
+
+        this.gui := Gui('-DPIScale +Resize +MinSize700x400 ', '批量重命名')
 
         /** @type {UIRuleEdit} */
         this.RuleEdit := UIRuleEdit(this)
@@ -65,7 +88,7 @@ class UIBatchReName {
         this.btnAddRule.OnEvent("Click", (*) => this.ShowRuleEdit("create", true))
         ; 删除规则按钮
         this.btnDeleteRule := this.gui.AddButton("x+m ys hp vDeleteRule", "移除")
-        this.btnDeleteRule.OnEvent("Click", (*) => this.DeleteRule())
+        this.btnDeleteRule.OnEvent("Click", (*) => this.RemoveSelectedRule())
         ; 上移规则按钮
         this.btnUpRule := this.gui.AddButton("x+m ys hp vUpRule", "上移")
         this.btnUpRule.OnEvent('Click', (*) => this.UpRule())
@@ -99,6 +122,26 @@ class UIBatchReName {
         this.btnPreview := this.gui.AddButton("x+m yp hp", "预览")
         this.btnPreview.OnEvent("Click", (*) => this.Update(true))
 
+        this.textFilter := this.gui.AddText("x+m yp" 3 " hp", "过滤器：")
+        this.checkFilterFile := this.gui.AddCheckbox("x+m yp-" 3 " hp", "文件")
+        this.checkFilterFile.Value := 1
+        this.editorFilterFile := this.gui.AddEdit("x+ yp hp", "")
+        this.editorFilterFile.OnEvent("Focus", (*) => HandleEditorFilterFileFocus())
+        HandleEditorFilterFileFocus(*) {
+            this.editorFilterFile.GetPos(&x, &y, &w, &h)
+            ToolTip("过滤内容（支持正则表达式，且忽略大小写）`n - 留空时将匹配所有文件`n例如：填入`"\.(jpg|png)$`" 来匹配jpg或png格式的文件", x + w, y, 2)
+            this.editorFilterFile.OnEvent("LoseFocus", (*) => ToolTip(, , , 2))
+        }
+
+        this.checkFilterFolder := this.gui.AddCheckbox("x+m" " yp" " hp", "文件夹")
+        this.editorFilterFolder := this.gui.AddEdit("x+ yp hp", "")
+        this.editorFilterFolder.OnEvent("Focus", (*) => HandleEditorFilterFolderFocus())
+        HandleEditorFilterFolderFocus(*) {
+            this.editorFilterFolder.GetPos(&x, &y, &w, &h)
+            ToolTip("过滤内容（支持正则表达式，且忽略大小写）`n - 留空时将匹配所有文件夹", x + w, y, 2)
+            this.editorFilterFolder.OnEvent("LoseFocus", (*) => ToolTip(, , , 2))
+        }
+
         this.btnClearFiles := this.gui.AddButton("x+m yp hp", "清空文件列表")
         this.btnClearFiles.OnEvent("Click", (*) => this.ClearFile())
 
@@ -113,7 +156,9 @@ class UIBatchReName {
         ; -------------------------
 
         ; 设置菜单
-        ; this.MenuBar := MenuBar()
+        this.MenuBar := MenuBar()
+
+        this.gui.MenuBar := this.MenuBar
 
         ; -------------------------
 
@@ -127,12 +172,11 @@ class UIBatchReName {
         ; 绑定窗口事件
         this.gui.OnEvent('Size', (guiObj, MinMax, Width, Height) => this.OnWindowResize(guiObj, MinMax, Width, Height))
         this.gui.OnEvent("Close", (*) => this.Close())
-        this.gui.OnEvent("DropFiles", (GuiObj, GuiCtrlObj, FileArray, X, Y) => this.OnDropFiles(GuiCtrlObj, FileArray, X, Y))
 
         ;* 注册窗口热键
         HotIfWinActive("ahk_id " this.gui.Hwnd)
 
-        ; 全选文件列表p
+        ;? 全选列表
         Hotkey("^a", HotKeyCtrlACallback)
         HotKeyCtrlACallback(HotkeyName) {
             ; 获取焦点控件的句柄
@@ -154,7 +198,22 @@ class UIBatchReName {
             }
         }
 
-        ; 保存预设
+        ;? 移除选中的文件或规则
+        Hotkey("Del", HotKeyDel)
+        HotKeyDel(HotkeyName) {
+            ; 获取焦点控件的句柄
+            hwnd := ControlGetFocus()
+            if (hwnd == this.listRuleView.Hwnd) {
+                ; 移除选中的规则
+                this.RemoveSelectedRule()
+            }
+            if (hwnd == this.listFileView.Hwnd) {
+                ; 移除选中的文件
+                this.RemoveSelectedFile()
+            }
+        }
+
+        ;? 保存预设
         Hotkey("^s", HotKeyCtrlSCallback)
         HotKeyCtrlSCallback(HotkeyName) {
             if (this.rules.Length) {
@@ -164,6 +223,16 @@ class UIBatchReName {
 
         HotIf()
 
+    }
+
+
+    EnableDarkTitleBar(hwnd) {
+        DWMWA_USE_IMMERSIVE_DARK_MODE := 20
+        DllCall("Dwmapi\DwmSetWindowAttribute"
+            , "ptr", hwnd
+            , "int", DWMWA_USE_IMMERSIVE_DARK_MODE
+            , "int*", 1
+            , "int", 4)
     }
 
     /**
@@ -222,6 +291,12 @@ class UIBatchReName {
         this.btnApply.Move(, middleButtonY)
         this.btnPreview.Move(, middleButtonY)
 
+        this.textFilter.Move(, middleButtonY + 3)
+        this.checkFilterFile.Move(, middleButtonY)
+        this.editorFilterFile.Move(, middleButtonY)
+        this.checkFilterFolder.Move(, middleButtonY)
+        this.editorFilterFolder.Move(, middleButtonY)
+
         this.btnClearFiles.GetPos(&xBtnClearFiles, &yBtnClearFiles, &wBtnClearFiles, &hBtnClearFiles)
         this.btnClearFiles.Move(wClientW - wMarginX - wBtnClearFiles, middleButtonY)
 
@@ -238,24 +313,6 @@ class UIBatchReName {
         ; this.btnClose.GetPos(&xBtnClose, &yBtnClose, &wBtnClose, &hBtnClose)
         ; this.btnClose.Move(wClientW - wMarginX - wBtnClose, bottomButtonY)
 
-    }
-
-    /**
-     * 拖拽文件回调
-     * @param {Object} GuiCtrlObj 
-     * @param {Array} FileArray 文件路径列表
-     * @param {Integer} X 文件拖拽位置的 X 坐标, 相对于窗口客户端区域的左上角.
-     * @param {Integer} Y 文件拖拽位置的 Y 坐标, 相对于窗口客户端区域的左上角.
-     */
-    OnDropFiles(GuiCtrlObj, FileArray, X, Y) {
-        Console.Debug("拖拽文件：", FileArray)
-        for (path in FileArray) {
-            file := ReNameFile(path)
-            this.files.Push(file)
-            this.AddFile(file)
-            ;* 刷新ListView 同时重算重命名结果
-            this.Update(true)
-        }
     }
 
     /**
@@ -284,8 +341,8 @@ class UIBatchReName {
         this.Update(true)
     }
 
-    ;* 删除所选规则
-    DeleteRule(*) {
+    ;* 移除所选规则
+    RemoveSelectedRule(*) {
         listIndex := this.GetListViewIndexList(this.listRuleView, , true)
         ; Console.Debug("获取到的所选项的索引：", listIndex)
 
@@ -386,7 +443,7 @@ class UIBatchReName {
     }
 
     /**
-     * * 获取选中的规则
+     * * （通用）获取ListView中选中项目索引
      * @param {Gui.ListView} LV ListView控件对象
      * @param {String} rowType 如果省略, 则方法搜索下一个选择的/高亮的行(请参阅下面的例子). 否则, 请指定以下字符串之一:
      * `C` 或 `Checked`: 寻找下一个选中的行.
@@ -432,20 +489,31 @@ class UIBatchReName {
     ;* 保存预设
     SavePreset() {
         ; this.gui.GetPos(&xGui, &yGui, &wGui, &hGui)
-        ; this.gui.GetClientPos(&xGui, &yGui, &wGui, &hGui)
-        WinGetClientPos(&xGui, &yGui, &wGui, &hGui, "ahk_id" this.gui.Hwnd)
+        this.gui.GetClientPos(&xGui, &yGui, &wGui, &hGui)
+        ; WinGetClientPos(&xGui, &yGui, &wGui, &hGui, "ahk_id" this.gui.Hwnd)
         ; WinGetPos(&xGui, &yGui, &wGui, &hGui, "ahk_id" this.gui.Hwnd)
 
-        inputBoxObj := InputBox("请输入预设名称：", "创建预设", "w200  h90  x" xGui + (wGui - 200 * this.DPIScale) / 2 " y" yGui, "新预设")
+        inputBoxObj := InputBox("请输入预设名称：", "创建预设", "w150  h70  x" xGui + (wGui - 150 * this.DPIScale) / 2 " y" yGui, "新预设")
         if (inputBoxObj.Result == "Cancel") {
             return
         }
+        ; 预设信息
         preset := {
             name: inputBoxObj.Value,
-            rules: this.rules
+            rules: this.rules,
+            filters: {
+                file: {
+                    enable: this.checkFilterFile.Value,
+                    regex: this.editorFilterFile.Value
+                },
+                folder: {
+                    enable: this.checkFilterFolder.Value,
+                    regex: this.editorFilterFolder.Value
+                }
+            }
         }
 
-        writeTo := A_ScriptDir this.presetDir "\" preset.name ".json"
+        writeTo := this.presetDir "\" preset.name ".json"
         if (FileExist(writeTo)) {
             op := MsgBox("预设 “" preset.name "” 已存在，确认覆盖？", "提示", "YesNo Owner" this.gui.Hwnd)
             if (op == "No") {
@@ -469,7 +537,7 @@ class UIBatchReName {
 
     ;* 加载预设名称列表
     ReLoadPresetNameList() {
-        dir := A_ScriptDir this.presetDir
+        dir := this.presetDir
         list := []
         loop files dir "\*.json", "F" {
             SplitPath(A_LoopFileFullPath, , , , &presetName)
@@ -490,13 +558,23 @@ class UIBatchReName {
             ; 加载预设
             if (IsSet(Value) && Value) {
                 ; Console.Debug("加载预设：" Value)
-                path := A_ScriptDir this.presetDir "\" Value ".json"
+                path := this.presetDir "\" Value ".json"
                 ; Console.Debug("预设路径:" path)
                 if (FileExist(path)) {
                     ; 加载预设
                     /** @type {Map} */
                     jsonMap := JSON.LoadFile(path, "UTF-8") ;? `JSON.LoadFile` 和 `JSON..Parse` 解析出来的结果是一个 `Map` 对象
                     ; Console.Debug("加载预设 " Type(jsonMap), jsonMap)
+
+                    ; 加载过滤器
+                    filtersMap := jsonMap.Get("filters", Map())
+                    fileFilter := filtersMap.Get("file", Map())
+                    this.checkFilterFile.Value := fileFilter.Get("enable", true)
+                    this.editorFilterFile.Value := fileFilter.Get("regex", "")
+                    folderFilter := filtersMap.Get("folder", Map())
+                    this.checkFilterFolder.Value := folderFilter.Get("enable", true)
+                    this.editorFilterFolder.Value := folderFilter.Get("regex", "")
+
                     ; 清空原有规则
                     this.ClearRule()
                     /** @type {Map} */
@@ -538,10 +616,10 @@ class UIBatchReName {
         ; 获取预设下标
         index := this.listPreset.Value
 
-        path := A_ScriptDir this.presetDir "\" presetName ".json"
+        path := this.presetDir "\" presetName ".json"
         if (FileExist(path)) {
             op := MsgBox("确认删除预设 “" presetName "” ", "提示", "YesNo Owner" this.gui.Hwnd)
-            Console.Debug("用户确认删除：" op)
+            ; Console.Debug("用户确认删除：" op)
             if (op == "No")
                 return
 
@@ -604,37 +682,64 @@ class UIBatchReName {
 
     /**
      * * 获取文件列表
-     * @returns {Array<String>} 
+     * @returns {Array<ReNameFile>} 
      */
     GetFiles() {
+        /** @type {Array<ReNameFile>} */
         list := []
-        ; 尝试获取选中的文件路径
-        files := GetSelectedExplorerItemsPaths()
-        ; Console.Debug(files)
+        ; 获取选中的项(文件资源管理器中)的路径列表
+        pathList := GetSelectedExplorerItemsPaths()
 
-        if (files.Length > 0) {
+        if (pathList.Length > 0) {
             ; 遍历所选文件
-            for path in files {
-                SplitPath(path, &name)
-                attrib := FileGetAttrib(path)
-                if (FileGetAttrib(path) ~= "[H]")
-                    continue  ; 跳过这个文件并继续下一个文件.
+            for path in pathList {
+                file := ReNameFile(path)
 
-                if (attrib ~= "[A]") {
-                    ; this.listFileView.Add(, "✔", name, name, path)
-                    list.Push(path)
-                }
+                ;* 跳过隐藏文件和已存在文件
+                if (file.Attribute ~= "[H]" || this.files.Find((f) => f.Path == file.Path))
+                    continue
 
-                if (attrib ~= "[D]") {
-                    ; 遍历路径下的文件
-                    ; Loop Files pathNowWindow "\*", "FDR" {
-                    loop files path "\*", "F" {
-                        pathFile := A_LoopFileFullPath
-                        fileName := A_LoopFileName
-                        if A_LoopFileAttrib ~= "[H]"  ; 跳过任何具有 H(隐藏), R(只读) 或 S(系统). 请参阅 ~= 运算符.
-                            continue  ; 跳过这个文件并继续下一个文件.
-                        ; this.listFileView.Add(, "✔", fileName, fileName, pathFile)
-                        list.Push(pathFile)
+                if (file.IsDirectory) {
+                    ; 判断是否记录文件夹
+                    if (this.checkFilterFolder) {
+                        ; 判断是否匹配过滤器
+                        if (this.editorFilterFolder) {
+                            if (file.Path ~= "i)" this.editorFilterFolder.Value) {
+                                list.Push(file)
+                            }
+                        } else {
+                            list.Push(file)
+                        }
+                    }
+                    ; 判断是否获取文件夹中的文件
+                    if (this.checkFilterFile.Value) {
+                        ; 遍历路径下的文件
+                        loop files file.Path "\*", "F" {
+                            subFile := ReNameFile(A_LoopFileFullPath)
+
+                            ;* 跳过隐藏文件和已存在文件
+                            if (subFile.Attribute ~= "[H]" || this.files.Find((f) => f.Path == subFile.Path))
+                                continue
+                            ; 判断是否匹配过滤器
+                            if (this.editorFilterFile.Value) {
+                                if (subFile.Path ~= "i)" this.editorFilterFile.Value) {
+                                    list.Push(subFile)
+                                }
+                            } else {
+                                list.Push(subFile)
+                            }
+                        }
+                    }
+                } else {
+                    if (this.checkFilterFile.Value) {
+                        ; 判断是否匹配过滤器
+                        if (this.editorFilterFile.Value) {
+                            if (file.Path ~= "i)" this.editorFilterFile.Value) {
+                                list.Push(file)
+                            }
+                        } else {
+                            list.Push(file)
+                        }
                     }
                 }
 
@@ -643,21 +748,42 @@ class UIBatchReName {
             ; 获取当前窗口路径
             pathNowWindow := GetActiveExplorerPath()
 
-            ; Console.Debug("当前窗口路径：" pathNowWindow)
-
             if (pathNowWindow == "")
                 return list
-            ; Console.Debug(pathNowWindow "*")
 
-            ; 遍历路径下的文件
-            ; Loop Files pathNowWindow "\*", "FDR" {
             loop files pathNowWindow "\*", "F" {
-                path := A_LoopFileFullPath
-                name := A_LoopFileName
-                if A_LoopFileAttrib ~= "[H]"  ; 跳过任何具有 H(隐藏), R(只读) 或 S(系统). 请参阅 ~= 运算符.
-                    continue  ; 跳过这个文件并继续下一个文件.
-                ; this.listFileView.Add(, "✔", name, name, path)
-                list.Push(path)
+                file := ReNameFile(A_LoopFileFullPath)
+
+                ;* 跳过隐藏文件和已存在文件
+                if (file.Attribute ~= "[H]" || this.files.Find((f) => f.Path == file.Path))
+                    continue
+
+                if (file.IsDirectory) {
+                    ; 判断是否记录文件夹
+                    if (this.checkFilterFolder.Value) {
+                        ; 判断是否匹配过滤器
+                        if (this.editorFilterFolder.Value) {
+                            if (file.Path ~= "i)" this.editorFilterFolder.Value) {
+                                list.Push(file)
+                            }
+                        } else {
+                            list.Push(file)
+                        }
+                    }
+                } else {
+                    if (this.checkFilterFile.Value) {
+                        ; 判断是否匹配过滤器
+                        if (this.editorFilterFile.Value) {
+                            if (file.Path ~= "i)" this.editorFilterFile.Value) {
+                                list.Push(file)
+                            }
+                        } else {
+                            list.Push(file)
+                        }
+                    }
+                }
+
+
             }
         }
 
@@ -665,19 +791,120 @@ class UIBatchReName {
     }
 
     /**
+     * 拖拽文件回调
+     * @param {Object} GuiCtrlObj 
+     * @param {Array} FileArray 文件路径列表
+     * @param {Integer} X 文件拖拽位置的 X 坐标, 相对于窗口客户端区域的左上角.
+     * @param {Integer} Y 文件拖拽位置的 Y 坐标, 相对于窗口客户端区域的左上角.
+     */
+    OnDropFiles(GuiCtrlObj, FileArray, X, Y) {
+        ; Console.Debug("拖拽文件：", FileArray)
+        for (path in FileArray) {
+            file := ReNameFile(path)
+
+            ;* 跳过隐藏文件和已存在文件
+            if (file.Attribute ~= "[H]" || this.files.Find((f) => f.Path == file.Path))
+                continue
+
+            if (file.IsDirectory) {
+                ; 判断是否记录文件夹
+                if (this.checkFilterFolder) {
+                    ; 判断是否匹配过滤器
+                    if (this.editorFilterFolder) {
+                        if (file.Path ~= "i)" this.editorFilterFolder.Value) {
+                            this.files.Push(file)
+                            this.AddFileToListView(file)
+                        }
+                    } else {
+                        this.files.Push(file)
+                        this.AddFileToListView(file)
+                    }
+                }
+
+                ; 判断是否获取文件夹中的文件
+                if (this.checkFilterFile.Value) {
+                    ; 遍历路径下的文件
+                    loop files file.Path "\*", "F" {
+                        subFile := ReNameFile(A_LoopFileFullPath)
+
+                        ;* 跳过隐藏文件和已存在文件
+                        if (subFile.Attribute ~= "[H]" || this.files.Find((f) => f.Path == subFile.Path))
+                            continue
+
+                        ; 判断是否匹配过滤器
+                        if (this.editorFilterFile.Value) {
+                            if (subFile.Path ~= "i)" this.editorFilterFile.Value) {
+                                this.files.Push(subFile)
+                                this.AddFileToListView(subFile)
+                            }
+                        } else {
+                            this.files.Push(subFile)
+                            this.AddFileToListView(subFile)
+                        }
+                    }
+                }
+            } else {
+                if (this.checkFilterFile.Value) {
+                    ; 判断是否匹配过滤器
+                    if (this.editorFilterFile.Value) {
+                        if (file.Path ~= "i)" this.editorFilterFile.Value) {
+                            this.files.Push(file)
+                            this.AddFileToListView(file)
+                        }
+                    } else {
+                        this.files.Push(file)
+                        this.AddFileToListView(file)
+                    }
+                }
+            }
+        }
+
+        ;* 最后刷新ListView 同时重新计算重命名结果
+        this.Update(true)
+    }
+
+    /**
      * *加载文件到ListView
      */
     LoadFile() {
         for (file in this.files) {
-            this.AddFile(file)
+            this.AddFileToListView(file)
         }
+    }
+
+
+    ;* 移除所选文件
+    RemoveSelectedFile(*) {
+        listIndex := this.GetListViewIndexList(this.listFileView, , true)
+        ; Console.Debug("获取到的所选项的索引：", listIndex)
+
+        for (index in listIndex) {
+
+            this.files.RemoveAt(index)
+
+            this.listFileView.Delete(index)
+        }
+
+        ; 重新设置索引
+        ; loop this.listRuleView.GetCount() {
+        ;     this.listRuleView.Modify(A_Index, , A_Index)
+        ; }
+
+        ; 更新两个ListView
+        this.Update(true)
+
+        ; 判断规则列表是否为空
+        ; if (!this.files.Length) {
+        ;     ; 添加对 `保存规则` 按钮的禁用
+        ;     this.btnSavePreset.Opt("+Disabled")
+        ; }
     }
 
     /**
      * *加载文件到ListView
      * @param {ReNameFile} file 重命名文件对象
      */
-    AddFile(file) {
+    AddFileToListView(file) {
         ; Console.Debug(file.NewPath)
         index := this.listFileView.Add(, "✔", file.Name, file.Name, file.Path)
         this.listFileView.Modify(index, "+Check")
@@ -760,6 +987,7 @@ class UIBatchReName {
         newFiles := []
         ; 根据ListFileView展示的数据对this.files进行排序
         loop this.listFileView.GetCount() {
+            ;todo 从路径列获取路径（当前第4例是Path路径列）
             path := this.listFileView.GetText(A_Index, 4)
             ; 找到对应的file在this.files中的位置
             index := this.files.Find((f) => f.Path == path)
@@ -821,21 +1049,42 @@ class UIBatchReName {
      */
     CheckConflict() {
         isConflict := false
+        /** @type {Array<ReNameFile>} 记录即将要修改文件夹项目 */
+        folderItemList := []
+
         loop this.files.Length {
             /** @type {ReNameFile} */
             file := this.files[A_Index]
+
             ; 跳过未修改的文件
             if (file.Path == file.NewPath) {
                 this.listFileView.Modify(A_Index, , "✔")
                 continue
             }
-            ; 判断文件是否存在
-            ; Console.Debug("新路径属性："  file.NewAttribute)
-            ; file.NewAttribute 不为空则说文件存在即冲突
-            this.listFileView.Modify(A_Index, , file.NewAttribute ? "❗" : "✔")
-            if (file.NewAttribute) {
+
+            ;! 判断在修改该项目之前是否会修改其所在目录
+            indexDir := folderItemList.Find(f => f.Path == file.Dir)
+            if (indexDir > 0) {
+                ; 如果发现前面记录的文件夹列表中存在当前项目所在目录则标记为冲突
+                this.listFileView.Modify(A_Index, , "❗")
+                ; 标记为冲突
                 isConflict := true
+                ; 也就无需后续判断
+                continue
             }
+
+            ;? 如果当前项目是文件夹则记录下来
+            if (file.IsDirectory) {
+                folderItemList.Push(file)
+            }
+
+            ; 判断文件是否存在
+            ;* file.NewAttribute 不为空则说文件存在即冲突
+
+            this.listFileView.Modify(A_Index, , file.NewAttribute ? "❗" : "✔")
+            ; 标记判断
+            isConflict := file.NewAttribute
+
         }
         if (isConflict) {
             ; 冲突时禁用重命名应用按钮
@@ -853,7 +1102,7 @@ class UIBatchReName {
             MsgBox("没有可重命名文件。", "提示")
             return
         }
-
+        successCount := 0
         for (index, fileItem in this.files) {
             ;* 跳过冲突项 NewAttribute 不为空就说明冲突
             if (fileItem.NewAttribute) {
@@ -881,29 +1130,38 @@ class UIBatchReName {
                         this.listFileView.Modify(index, , , fileItem.Name, fileItem.NewName, fileItem.Path)
                     }
                 }
+                ; 成功后成功计数++
+                successCount++
             } catch as e {
                 Console.Error(e)
             }
+
         }
         ; 完成后刷新两视图
         this.UpdateFileListView()
 
-        MsgBox("✔重命名成功！（成功重命名" this.files.Length "项）", "提示", "Owner" this.gui.Hwnd)
+        MsgBox("✔重命名成功！（成功重命名 " successCount "/" this.files.Length " 项）", "提示", "Owner" this.gui.Hwnd)
     }
 
     ; 显示窗口
     Show() {
         ; 加载预设列表
         this.ReLoadPresetNameList()
-        ; 获取文件列表
-        filePaths := this.GetFiles()
+        ; 获取文件
+        renameFiles := this.GetFiles()
+        ; Console.Debug(renameFiles)
 
         this.RuleEdit.gui.Opt("+Owner" this.gui.Hwnd)
 
         ; 显示窗口
         if (!this.isShow) {
+            ;* 以隐藏方式显示gui窗口
+            this.gui.Show("Hide w700")
             ; 显示窗口
-            this.gui.Show('w800 Center')
+            this.gui.Show("w800")
+            ; 注册文件拖拽到窗口的事件
+            this.RegisterDropFileEvent()
+
         } else {
             ; 并且激活窗口
             WinActivate("ahk_id" this.gui.Hwnd)
@@ -913,15 +1171,15 @@ class UIBatchReName {
         }
 
         ; 如果选中的文件列表数量>0则重新载入文件
-        if (filePaths.Length > 0) {
+        if (renameFiles.Length > 0) {
             ; 若窗口已经存又再次触发则清空类别重新添加
             this.ClearFile()
-            for (path in filePaths) {
-                ; 转为ReNameFile对象并存入files
-                this.files.Push(ReNameFile(path))
+            for (file in renameFiles) {
+                this.files.Push(file)
+                this.AddFileToListView(file)
             }
             ; 加载文件列表
-            this.LoadFile()
+            ; this.LoadFile()
             ;* 刷新ListView 同时重算重命名结果
             this.Update(true)
             ;* 按照路径逻辑排序(首次排序)
@@ -936,16 +1194,37 @@ class UIBatchReName {
         this.isShow := true
     }
 
+    ;* 注册DropFile事件（解决管理员身份运行后无法触发的问题）
+    RegisterDropFileEvent() {
+        WM_DROPFILES := 0x0233
+        WM_COPYDATA := 0x004A
+        WM_COPYGLOBALDATA := 0x0049
+        MSGFLT_ALLOW := 1
+
+        DllCall("User32\ChangeWindowMessageFilterEx", "ptr", this.gui.Hwnd, "uint", WM_DROPFILES, "uint", MSGFLT_ALLOW, "ptr", 0)
+        DllCall("User32\ChangeWindowMessageFilterEx", "ptr", this.gui.Hwnd, "uint", WM_COPYDATA, "uint", MSGFLT_ALLOW, "ptr", 0)
+        DllCall("User32\ChangeWindowMessageFilterEx", "ptr", this.gui.Hwnd, "uint", WM_COPYGLOBALDATA, "uint", MSGFLT_ALLOW, "ptr", 0)
+        this.gui.OnEvent("DropFiles", (GuiObj, GuiCtrlObj, FileArray, X, Y) => this.OnDropFiles(GuiCtrlObj, FileArray, X, Y))
+    }
+
     ; 关闭窗口
     Close() {
         this.gui.Hide()
         this.isShow := false
         this.RuleEdit.Close()
+        ; 判断是否在关闭窗口的同时关闭脚本
+        if (this.isCloseGuiToExitApp) {
+            Console.Debug("即将停止脚本")
+            ExitApp()
+        }
         return 1
     }
 
+    ; 类的析构函数/清理函数
     __Delete() {
+        this.RuleEdit := ""
         this.gui.Destroy()
+        this.gui := ""
     }
 
 }
@@ -954,7 +1233,13 @@ class UIBatchReName {
 class UIRuleEdit {
     /** @type {Gui} */
     gui := ''
+    DPIScale := A_ScreenDPI / 96
+    tabWidth := 420
+    gapX := 8
+    gapY := 6
+
     isShow := false
+
     mode := "create"
     nowTabIndex := 1
     types := [
@@ -966,21 +1251,20 @@ class UIRuleEdit {
         "正则",
         "扩展名"
     ]
-    tabWidth := 420
     editRuleIndex := 0 ; 当前编辑的规则索引
 
-    gapX := 8
-    gapY := 6
-
-    DPIScale := A_ScreenDPI / 96
 
     /**
      * 
-     * @param {UIBatchReName}  parent 
+     * @param {BatchReName}  parent 
      */
-    __New(parent) {
-        this.parent := parent
-        this.gui := Gui(, "规则")
+    __New(parent?) {
+        if (IsSet(parent)) {
+            this.parent := parent
+        } else {
+            this.parent := WinActive("A")
+        }
+        this.gui := Gui("-DPIScale", "规则")
         this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
         this.gui.MarginX := this.gapX
         this.gui.MarginY := this.gapY
@@ -988,12 +1272,12 @@ class UIRuleEdit {
         ; Console.Debug("准备定义选项卡")
 
         ;* 定义选项卡
-        this.typeTab := this.gui.AddTab3('', this.types)
+        this.Tabs := this.gui.AddTab3('', this.types)
 
         this.gui.SetFont("s10")
 
         ;? 插入
-        this.typeTab.UseTab("插入")
+        this.Tabs.UseTab("插入")
         {
             insertGroup := this.gui.AddGroupBox("w" this.tabWidth " r12 Section", '配置：')
 
@@ -1004,33 +1288,33 @@ class UIRuleEdit {
             ; "位置" 选项：第一列
             this.Ctl_Insert_Position_Prefix := this.gui.AddRadio("x+m yp" 2 " vInsert_Position_Prefix Group ", "前缀")
             this.Ctl_Insert_Position_Prefix.Value := 1
-            this.Ctl_Insert_Position_Suffix := this.gui.AddRadio("xp y+m" 6 " vInsert_Position_Suffix", "后缀")
-            this.Ctl_Insert_Position_Index := this.gui.AddRadio("xp y+m" 6 " vInsert_Position_Index", "位置：")
-            this.Ctl_Insert_Position_Before := this.gui.AddRadio("xp y+m" 6 " vInsert_Position_Before", "到文本前：")
-            this.Ctl_Insert_Position_After := this.gui.AddRadio("xp y+m" 6 " vInsert_Position_After", "到文本后：")
-            this.Ctl_Insert_Position_Replace := this.gui.AddRadio("xp y+m" 6 " vInsert_Position_Replace", "替换当前名称")
-            this.Ctl_Insert_IgnoreCase := this.gui.AddCheckbox("xp y+m" 6 " vInsert_IgnoreCase", "忽略大小写")
+            this.Ctl_Insert_Position_Suffix := this.gui.AddRadio("xp y+m" 8 " vInsert_Position_Suffix", "后缀")
+            this.Ctl_Insert_Position_Index := this.gui.AddRadio("xp y+m" 8 " vInsert_Position_Index", "位置：")
+            this.Ctl_Insert_Position_Before := this.gui.AddRadio("xp y+m" 8 " vInsert_Position_Before", "到文本前：")
+            this.Ctl_Insert_Position_After := this.gui.AddRadio("xp y+m" 8 " vInsert_Position_After", "到文本后：")
+            this.Ctl_Insert_Position_Replace := this.gui.AddRadio("xp y+m" 8 " vInsert_Position_Replace", "替换当前名称")
+            this.Ctl_Insert_IgnoreCase := this.gui.AddCheckbox("xp y+m" 8 " vInsert_IgnoreCase", "忽略大小写")
             this.Ctl_Insert_IgnoreCase.Value := 0
-            this.Ctl_Insert_IgnoreExt := this.gui.AddCheckbox("xp y+m" 6 " vInsert_IgnoreExt", "忽略扩展名")
+            this.Ctl_Insert_IgnoreExt := this.gui.AddCheckbox("x+m yp" " vInsert_IgnoreExt", "忽略扩展名")
             this.Ctl_Insert_IgnoreExt.Value := 1
 
             ; "位置" 选项：第二列
             ; "位置" 相关附属
-            this.Ctl_Insert_Position_Index_AnchorIndex_Edit := this.gui.AddEdit("x" 168 " y" 170 " w60  Section")
+            this.Ctl_Insert_Position_Index_AnchorIndex_Edit := this.gui.AddEdit("x" 170 " y" 190 " w60  Section")
             this.Ctl_Insert_Position_Index_AnchorIndex := this.gui.AddUpDown("Range1-2147483647 vInsert_Position_Index_AnchorIndex", 1)
             this.Ctl_Insert_Position_Index_AnchorIndex.OnEvent('Change', (*) => this.Ctl_Insert_Position_Index.Value := true)
             this.Ctl_Insert_Position_Index_ReverseIndex := this.gui.AddCheckbox("x+m" " yp" " hp w80 vInsert_Position_Index_ReverseIndex", "从右到左")
             this.Ctl_Insert_Position_Index_ReverseIndex.OnEvent("Click", (*) => this.Ctl_Insert_Position_Index_ReverseIndex.Value ? this.Ctl_Insert_Position_Index.Value := true : "")
             ; "到文本前" 相关附属
-            this.Ctl_Insert_Position_Before_AnchorText := this.gui.AddEdit("xs y+" 3 " vInsert_Position_Before_AnchorText")
+            this.Ctl_Insert_Position_Before_AnchorText := this.gui.AddEdit("xs y+" 3 "  w200 vInsert_Position_Before_AnchorText")
             this.Ctl_Insert_Position_Before_AnchorText.OnEvent("Change", (*) => this.Ctl_Insert_Position_Before.Value := true)
             ; "到文本后" 相关附属
-            this.Ctl_Insert_Position_After_AnchorText := this.gui.AddEdit("xp y+" 3 " vInsert_Position_After_AnchorText")
+            this.Ctl_Insert_Position_After_AnchorText := this.gui.AddEdit("xp y+" 3 "  w200 vInsert_Position_After_AnchorText")
             this.Ctl_Insert_Position_After_AnchorText.OnEvent("Change", (*) => this.Ctl_Insert_Position_After.Value := true)
         }
 
         ;? 替换
-        this.typeTab.UseTab("替换")
+        this.Tabs.UseTab("替换")
         {
             this.gui.AddGroupBox("w" this.tabWidth " r12", '配置：')
 
@@ -1051,7 +1335,7 @@ class UIRuleEdit {
         }
 
         ;? 移除
-        this.typeTab.UseTab("移除")
+        this.Tabs.UseTab("移除")
         {
             this.gui.AddGroupBox("w" this.tabWidth " r12", '配置：')
 
@@ -1071,51 +1355,50 @@ class UIRuleEdit {
         }
 
         ;? 序列化
-        this.typeTab.UseTab("序列化")
+        this.Tabs.UseTab("序列化")
         {
-            this.gui.AddGroupBox("w" this.tabWidth " r12", '')
 
-            this.gui.AddGroupBox("x" 32 " y" 75 " r10.6 w230", '插入位置：')
+            this.gui.AddGroupBox(" r12 w245", '插入位置：')
             ; 位置设置
-            this.Ctl_Serialize_Position_Prefix := this.gui.AddRadio("xp" 10 " yp" 25 " vSerialize_Position_Prefix Group", '前缀')
+            this.Ctl_Serialize_Position_Prefix := this.gui.AddRadio("xp" 15 " yp" 25 " vSerialize_Position_Prefix Group", '前缀')
             this.Ctl_Serialize_Position_Prefix.Value := 1
-            this.Ctl_Serialize_Position_Suffix := this.gui.AddRadio("xp y+m" 6 " vSerialize_Position_Suffix", "后缀")
-            this.Ctl_Serialize_Position_Index := this.gui.AddRadio("xp y+m" 6 " vSerialize_Position_Index", "位置：")
-            this.Ctl_Serialize_Position_Before := this.gui.AddRadio("xp y+m" 6 " vSerialize_Position_Before", "到文本前：")
-            this.Ctl_Serialize_Position_After := this.gui.AddRadio("xp y+m" 6 " vSerialize_Position_After", "到文本后：")
-            this.Ctl_Serialize_Position_Replace := this.gui.AddRadio("xp y+m" 6 " vSerialize_Position_Replace", "替换当前名称")
-            this.Ctl_Serialize_IgnoreCase := this.gui.AddCheckbox("xp y+m" 6 " vSerialize_IgnoreCase", "忽略大小写")
+            this.Ctl_Serialize_Position_Suffix := this.gui.AddRadio("xp y+m" 9 " vSerialize_Position_Suffix", "后缀")
+            this.Ctl_Serialize_Position_Index := this.gui.AddRadio("xp y+m" 9 " vSerialize_Position_Index", "位置：")
+            this.Ctl_Serialize_Position_Before := this.gui.AddRadio("xp y+m" 9 " vSerialize_Position_Before", "到文本前：")
+            this.Ctl_Serialize_Position_After := this.gui.AddRadio("xp y+m" 9 " vSerialize_Position_After", "到文本后：")
+            this.Ctl_Serialize_Position_Replace := this.gui.AddRadio("xp y+m" 9 " vSerialize_Position_Replace", "替换当前名称")
+            this.Ctl_Serialize_IgnoreCase := this.gui.AddCheckbox("xp y+m" 9 " vSerialize_IgnoreCase", "忽略大小写")
             this.Ctl_Serialize_IgnoreCase.Value := 0
-            this.Ctl_Serialize_IgnoreExt := this.gui.AddCheckbox("xp y+m" 6 " vSerialize_IgnoreExt", "忽略扩展名")
+            this.Ctl_Serialize_IgnoreExt := this.gui.AddCheckbox("xp y+m" 9 " vSerialize_IgnoreExt", "忽略扩展名")
             this.Ctl_Serialize_IgnoreExt.Value := 1
 
             ; 位置设置：第二列
             ; 位置相关附属
-            this.gui.AddEdit("x" 110 " y" 157 " w50 Section")
+            this.gui.AddEdit("x" 100 " y" 154 " w60 Section")
             this.Ctl_Serialize_Position_Index_AnchorIndex := this.gui.AddUpDown("Range1-2147483647 vSerialize_Position_Index_AnchorIndex", 1)
             this.Ctl_Serialize_Position_Index_AnchorIndex.OnEvent('Change', (*) => this.Ctl_Serialize_Position_Index.Value := true)
             this.Ctl_Serialize_Position_Index_ReverseIndex := this.gui.AddCheckbox("x+m" " yp" " hp w80 vSerialize_Position_Index_ReverseIndex", "从右到左")
             this.Ctl_Serialize_Position_Index_ReverseIndex.OnEvent("Click", (*) => this.Ctl_Serialize_Position_Index_ReverseIndex.Value ? this.Ctl_Serialize_Position_Index.Value := true : "")
             ; "到文本前" 相关附属
-            this.Ctl_Serialize_Position_Before_AnchorText := this.gui.AddEdit("xs" 23 " y+" 3.5 " w100 vSerialize_Position_Before_AnchorText")
+            this.Ctl_Serialize_Position_Before_AnchorText := this.gui.AddEdit("xs" 23 " y+" 3 " w120 vSerialize_Position_Before_AnchorText")
             this.Ctl_Serialize_Position_Before_AnchorText.OnEvent("Change", (*) => this.Ctl_Serialize_Position_Before.Value := true)
             ; "到文本后" 相关附属
-            this.Ctl_Serialize_Position_After_AnchorText := this.gui.AddEdit("xp y+" 3.5 " w100 vSerialize_Position_After_AnchorText")
+            this.Ctl_Serialize_Position_After_AnchorText := this.gui.AddEdit("xp y+" 3 " w120 vSerialize_Position_After_AnchorText")
             this.Ctl_Serialize_Position_After_AnchorText.OnEvent("Change", (*) => this.Ctl_Serialize_Position_After.Value := true)
 
             ; 序列设置
-            this.gui.AddGroupBox("x" 274 " y" 75 " r10.6 w150", '序列位置：')
+            this.gui.AddGroupBox("x" 270 " y" 64 " r12 w170", '序列位置：')
 
-            this.gui.AddText("xp" 10 " yp" 27 " Section", "起始值：")
-            this.gui.AddEdit("x+m yp-" 2 " w50")
+            this.gui.AddText("xp" 15 " yp" 25 " Section", "起始值：")
+            this.gui.AddEdit("x+m yp-" 2 " w80")
             this.Ctl_Serialize_SequenceStart := this.gui.AddUpDown("Range-2147483648-2147483647 vSerialize_SequenceStart", 1)
 
             this.gui.AddText("xs y+m", "步长：")
-            this.gui.AddEdit("x+m" 13 " yp-" 2 " w50")
+            this.gui.AddEdit("x+m" 13 " yp-" 2 " w80")
             this.Ctl_Serialize_SequenceStep := this.gui.AddUpDown("Range-2147483648-2147483647 vSerialize_SequenceStep", 1)
 
             this.gui.AddText("xs y+m", "补零：")
-            this.gui.AddEdit("x+m" 13 " yp-" 2 " w50")
+            this.gui.AddEdit("x+m" 13 " yp-" 2 " w80")
             this.Ctl_Serialize_PaddingCount := this.gui.AddUpDown("Range1-2147483647 vSerialize_PaddingCount", 3)
 
             this.Ctl_Serialize_ResetFolderChanges := this.gui.AddCheckbox("xs y+m" 6 " vSerialize_ResetFolderChanges", "文件夹变时重置")
@@ -1124,13 +1407,13 @@ class UIRuleEdit {
         }
 
         ;? 填充
-        this.typeTab.UseTab("填充")
+        this.Tabs.UseTab("填充")
         {
-            this.gui.AddGroupBox("w" this.tabWidth " r12", '')
+            ; this.gui.AddGroupBox("w" this.tabWidth " r12", '')
 
-            this.gui.AddGroupBox("xp" 15 " yp" 15 " r3 w390", '数字填充：')
+            this.gui.AddGroupBox("r3 w" this.tabWidth, '数字填充：')
 
-            this.Ctl_Fill_ZeroPadding_Enable := this.gui.AddCheckbox("xp" 15 " yp" 30 " vFill_ZeroPadding_Enable Section", "补零填充长度：")
+            this.Ctl_Fill_ZeroPadding_Enable := this.gui.AddCheckbox("xp" 15 " yp" 25 " vFill_ZeroPadding_Enable Section", "补零填充长度：")
             this.gui.AddEdit("x+m yp-" 3 " w80")
             this.Ctl_Fill_ZeroPadding_Length := this.gui.AddUpDown("Range1-2147483647 vFill_ZeroPadding_Length", 1)
             this.Ctl_Fill_ZeroPadding_Length.OnEvent("Change", (*) => (this.Ctl_Fill_ZeroPadding_Enable.Value := true, this.Ctl_Fill_RemoveZeroPadding.Value := false))
@@ -1140,15 +1423,15 @@ class UIRuleEdit {
             this.Ctl_Fill_ZeroPadding_Enable.OnEvent("Click", (*) => this.Ctl_Fill_ZeroPadding_Enable.Value ? this.Ctl_Fill_RemoveZeroPadding.Value := false : "")
             this.Ctl_Fill_RemoveZeroPadding.OnEvent("Click", (*) => this.Ctl_Fill_RemoveZeroPadding.Value ? this.Ctl_Fill_ZeroPadding_Enable.Value := false : "")
 
-            this.gui.AddGroupBox("xs-" 15 " y+m" 20 " r4.4 w390", '文本填充：')
+            this.gui.AddGroupBox("xs-" 15 " y+m" 24 " r6 w" this.tabWidth, '文本填充：')
 
-            this.Ctl_Fill_TextPadding_Enable := this.gui.AddCheckbox("xp" 15 " yp" 30 " vFill_TextPadding_Enable Section", "文本填充长度：")
+            this.Ctl_Fill_TextPadding_Enable := this.gui.AddCheckbox("xp" 15 " yp" 25 " vFill_TextPadding_Enable Section", "文本填充长度：")
             this.gui.AddEdit("x+m" " yp-" 3 " w80")
             this.Ctl_Fill_TextPadding_Length := this.gui.AddUpDown("Range1-2147483647 vFill_TextPadding_Length", 1)
             this.Ctl_Fill_TextPadding_Length.OnEvent("Change", (*) => (this.Ctl_Fill_TextPadding_Enable.Value := true))
 
             this.gui.AddText("xs y+m" 2, "填充内容：")
-            this.Ctl_Fill_TextPadding_Character := this.gui.AddEdit("x+m yp-" 3 " vFill_TextPadding_Character")
+            this.Ctl_Fill_TextPadding_Character := this.gui.AddEdit("x+m yp-" 3 " w200 vFill_TextPadding_Character")
 
             this.gui.AddText("xs y+m" 2, "填充方向：")
             this.Ctl_Fill_TextPadding_Direction_Left := this.gui.AddRadio("x+m yp vFill_TextPadding_Direction_Left Group", "左")
@@ -1161,7 +1444,7 @@ class UIRuleEdit {
         }
 
         ;? 正则
-        this.typeTab.UseTab("正则")
+        this.Tabs.UseTab("正则")
         {
             this.gui.AddGroupBox("w" this.tabWidth " r12 Section", '配置：')
 
@@ -1176,7 +1459,7 @@ class UIRuleEdit {
         }
 
         ;? 扩展名
-        this.typeTab.UseTab("扩展名")
+        this.Tabs.UseTab("扩展名")
         {
             this.gui.AddGroupBox("w" this.tabWidth " r12 Section", '配置：')
             this.gui.AddText("xp" 15 " yp" 25 " Section", "新扩展名（无需.）")
@@ -1184,20 +1467,19 @@ class UIRuleEdit {
             this.Ctl_Extension_IgnoreExt := this.gui.AddCheckbox("xp y+m vExtension_IgnoreExt", "忽略扩展名")
         }
 
-        this.typeTab.UseTab()
+        this.Tabs.UseTab()
 
         ;* 底部按钮
-        this.btnConfirm := this.gui.AddButton("y+4 w" this.tabWidth - this.gui.MarginY * 5 + 4 " +Default", "添加规则")
+        this.btnConfirm := this.gui.AddButton("y+4 +Default", "添加规则")
         this.btnConfirm.OnEvent("Click", (*) => this.Confirm())
         this.btnCancel := this.gui.AddButton('x+4', "取消")
         this.btnCancel.OnEvent("Click", (*) => this.Cancel())
 
         ;* 添加Tab事件
-        this.typeTab.OnEvent('Change', (CtrlObj, Info) => this.OnTypeChange(CtrlObj, Info))
+        this.Tabs.OnEvent('Change', (CtrlObj, Info) => this.OnTypeChange(CtrlObj, Info))
 
         ;* 添加窗口事件
-        this.gui.OnEvent('Size', (guiObj, MinMax, wWidth, wHeight) => this.OnWindowResize(guiObj, MinMax, wWidth,
-            wHeight))
+        this.gui.OnEvent('Size', (guiObj, MinMax, wWidth, wHeight) => this.OnWindowResize(guiObj, MinMax, wWidth, wHeight))
         this.gui.OnEvent("Close", (*) => this.Close())
 
     }
@@ -1214,44 +1496,45 @@ class UIRuleEdit {
         if (MinMax == -1)
             return
 
+        ; Console.Debug(wWidth, wHeight)
+
         this.gui.GetClientPos(&wClientX, &wClientY, &wClientW, &wClientH)
         wMarginX := this.gui.MarginX
         wMarginY := this.gui.MarginY
 
         ;* 调整"插入"Tab下的第二列
-        {
-            gap := 4
-            this.Ctl_Insert_Position_Index.GetPos(&xPI, &yPI, &wPI, &hPI)
-            this.Ctl_Insert_Position_Before.GetPos(&xPB, &yPB, &wPB, &hPB)
-            this.Ctl_Insert_Position_After.GetPos(&xPA, &yPA, &wPA, &hPA)
-            this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(, , &wPIAE, &hPIAE)
-            xUnify := xPB + wPB + gap
-            this.Ctl_Insert_Position_Index_AnchorIndex_Edit.Move(xUnify, yPI + (hPI - hPIAE) / 2)
-            this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(&xPIAE, &yPIAE, &wPIAE, &hPIAE)
-            this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(, , &wPIA, &hPIA)
-            this.Ctl_Insert_Position_Index_AnchorIndex.Move(xPIAE + wPIAE, yPIAE)
+        ; {
+        ;     gap := 4
+        ;     this.Ctl_Insert_Position_Index.GetPos(&xPI, &yPI, &wPI, &hPI)
+        ;     this.Ctl_Insert_Position_Before.GetPos(&xPB, &yPB, &wPB, &hPB)
+        ;     this.Ctl_Insert_Position_After.GetPos(&xPA, &yPA, &wPA, &hPA)
+        ;     this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(, , &wPIAE, &hPIAE)
+        ;     xUnify := xPB + wPB + gap
+        ;     this.Ctl_Insert_Position_Index_AnchorIndex_Edit.Move(xUnify, yPI + (hPI - hPIAE) / 2)
+        ;     this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(&xPIAE, &yPIAE, &wPIAE, &hPIAE)
+        ;     this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(, , &wPIA, &hPIA)
+        ;     this.Ctl_Insert_Position_Index_AnchorIndex.Move(xPIAE + wPIAE + gap, yPIAE)
 
-            this.Ctl_Insert_Position_Index_ReverseIndex.GetPos(, , , &hPIR)
-            this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(&xPIA, &yPIA, &wPIA, &hPIA)
-            this.Ctl_Insert_Position_Index_ReverseIndex.Move(xPIA + wPIA + gap, yPIA + (hPIA - hPIR) / 2)
+        ;     this.Ctl_Insert_Position_Index_ReverseIndex.GetPos(, , , &hPIR)
+        ;     this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(&xPIA, &yPIA, &wPIA, &hPIA)
+        ;     this.Ctl_Insert_Position_Index_ReverseIndex.Move(xPIA + wPIA + gap, yPIA + (hPIA - hPIR) / 2)
 
-            this.Ctl_Insert_Position_Before_AnchorText.GetPos(, , , &hPBA)
-            this.Ctl_Insert_Position_Before_AnchorText.Move(xUnify, yPB + (hPB - hPBA) / 2)
+        ;     this.Ctl_Insert_Position_Before_AnchorText.GetPos(, , , &hPBA)
+        ;     this.Ctl_Insert_Position_Before_AnchorText.Move(xUnify, yPB + (hPB - hPBA) / 2)
 
-            this.Ctl_Insert_Position_After_AnchorText.GetPos(, , , &hPAA)
-            this.Ctl_Insert_Position_After_AnchorText.Move(xUnify, yPA + (hPA - hPAA) / 2)
-        }
+        ;     this.Ctl_Insert_Position_After_AnchorText.GetPos(, , , &hPAA)
+        ;     this.Ctl_Insert_Position_After_AnchorText.Move(xUnify, yPA + (hPA - hPAA) / 2)
+        ; }
 
         ;* 调整底部按钮
         this.btnCancel.GetPos(&bclX, &bclY, &bclW, &bclH)
         ; 底部按钮的统一Y值
-        bottomButtonY := wClientH - wMarginY - bclH
-        this.btnCancel.Move(wClientW - wMarginX - bclW, bottomButtonY)
+        ; bottomButtonY := wClientH - wMarginY - bclH
+        this.btnCancel.Move(wClientW - wMarginX - bclW)
 
         this.btnCancel.GetPos(&bclX, &bclY, &bclW, &bclH)
         this.btnConfirm.GetPos(&bcmX, &bcmY, &bcmW, &bcmH)
-        this.btnConfirm.Move(bclX - 4 - bcmW, bottomButtonY)
-
+        this.btnConfirm.Move(wMarginX, , wClientW - wMarginX * 2 - bclW)
     }
 
     /**
@@ -1547,6 +1830,15 @@ class UIRuleEdit {
         this.Close()
     }
 
+    /** 相对父窗口窗口居中 */
+    CenterGuiToParent() {
+        this.gui.GetPos(, , &w, &h)
+        if (this.parent) {
+            this.parent.gui.GetPos(&xP, &yP, &wP, &hP)
+            this.gui.Move(xP + (wP - w) / 2, yp + (hP - h) / 2)
+        }
+    }
+
     /**
      * 显示窗口
      * @param {"create"|"edit"} mode 模式
@@ -1558,15 +1850,28 @@ class UIRuleEdit {
         this.UpdateMode()
 
         this.gui.Opt("+Owner" this.parent.gui.Hwnd)
-        this.gui.Show()
+        ; this.gui.Show("AutoSize")
+        if (WinGetMinMax(this.gui.Hwnd) != 0) {
+            ; 窗口只要是最小化或者最大化状态都先恢复然后居中到主窗口
+            this.gui.Restore()
+            this.CenterGuiToParent()
+        } else {
+            ; 隐藏状态下显示
+            this.gui.Show("Hide")
+            ; 调整位置到父窗口中间后显示GUI界面
+            this.CenterGuiToParent()
+            this.gui.Show()
+        }
         this.isShow := true
+
+
         ; 禁止父窗口操作
         ; this.parent.gui.Opt("+Disabled")
         this.parent.gui.Opt("+OwnDialogs")
 
 
         if (mode == "create") {
-            this.typeTab.Choose(this.nowTabIndex)
+            this.Tabs.Choose(this.nowTabIndex)
         } else if (mode == "edit") {
             ; 编辑模式下禁用父窗口
             this.parent.gui.Opt("+Disabled")
@@ -1577,7 +1882,7 @@ class UIRuleEdit {
             ; 拿到要编辑的规则
             rule := this.parent.rules[this.editRuleIndex]
             ; Console.Debug("Show编辑规则：" this.editRuleIndex " , ", rule)
-            this.typeTab.Choose(this.nowTabIndex)
+            this.Tabs.Choose(this.nowTabIndex)
             this.MapRuleGUI(rule)
         }
 
@@ -1600,21 +1905,13 @@ class UIRuleEdit {
         this.gui.Hide()
         this.isShow := false
 
-        ; this.parent.gui.Opt("-OwnDialogs")
-        ; this.parent.gui.Opt("-Parent")
-        ; this.parent.gui.Opt("-OwnDialogs")
-
-        ; parentHwnd := this.parent.gui.Hwnd
-        ; if (WinExist("ahk_id" parentHwnd)) {
-        ;     WinActivate("ahk_id" parentHwnd)
-        ; }
-        ; 关闭窗口后将"编辑索引"置为0
         this.editRuleIndex := 0
         return 1
     }
 
     __Delete() {
         this.gui.Destroy()
+        this.gui := ""
     }
 }
 
@@ -2115,7 +2412,11 @@ class ReNameFile {
         this.DefineProp("NameNoExt", { Get: GetNameNoExt })
         GetNameNoExt(*) {
             SplitPath(this.Name, &name, &dir, &ext, &nameNoExt, &drive)
-            return nameNoExt
+            if (this.IsDirectory) {
+                return name
+            } else {
+                return nameNoExt
+            }
         }
 
         ; 是否是目录
@@ -2140,8 +2441,12 @@ class ReNameFile {
         ; 新文件名(不含扩展名)
         this.DefineProp("NewNameNoExt", { Get: GetNewNameNoExt })
         GetNewNameNoExt(*) {
-            SplitPath(this.NewName, , , , &nameNoExt)
-            return nameNoExt
+            SplitPath(this.NewName, &name, , , &nameNoExt)
+            if (this.IsDirectory) {
+                return name
+            } else {
+                return nameNoExt
+            }
         }
 
         ; 新路径
@@ -2233,6 +2538,11 @@ class ReName {
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                test := item.NewName
+            }
+
 
             ;? AHK 的switch语句不能使用break跳出，case并不会贯穿
             switch (rule.Position) {
@@ -2256,8 +2566,14 @@ class ReName {
                     test := content
             }
 
-            ; 最后判断是否加上扩展名
-            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+
+            ; 如果是文件最后还要判断是否加上扩展名
+            if (!item.IsDirectory) {
+                ; 最后判断是否加上扩展名
+                item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            } else {
+                item.NewName := test
+            }
         }
 
     }
@@ -2281,14 +2597,23 @@ class ReName {
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                test := item.NewName
+            }
 
             test := StringUtils.Replace(test, match, replaceTo, range, {
                 ignoreCase: rule.IgnoreCase,
                 IsExactMatch: rule.IsExactMatch
             })
 
-            ; 最后判断是否加上扩展名
-            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            ; 如果是文件最后还要判断是否加上扩展名
+            if (!item.IsDirectory) {
+                ; 最后判断是否加上扩展名
+                item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            } else {
+                item.NewName := test
+            }
         }
 
     }
@@ -2311,14 +2636,23 @@ class ReName {
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                test := item.NewName
+            }
 
             test := StringUtils.Remove(test, match, range, {
                 ignoreCase: rule.IgnoreCase,
                 IsExactMatch: rule.IsExactMatch
             })
 
-            ; 最后判断是否加上扩展名
-            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            ; 如果是文件最后还要判断是否加上扩展名
+            if (!item.IsDirectory) {
+                ; 最后判断是否加上扩展名
+                item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            } else {
+                item.NewName := test
+            }
         }
     }
 
@@ -2367,6 +2701,10 @@ class ReName {
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                test := item.NewName
+            }
 
             ;? AHK 的switch语句不能使用break跳出，case并不会贯穿
             switch (rule.Position) {
@@ -2390,8 +2728,13 @@ class ReName {
                     test := sequence
             }
 
-            ; 最后判断是否加上扩展名
-            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            ; 如果是文件最后还要判断是否加上扩展名
+            if (!item.IsDirectory) {
+                ; 最后判断是否加上扩展名
+                item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            } else {
+                item.NewName := test
+            }
         }
     }
 
@@ -2409,6 +2752,10 @@ class ReName {
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                test := item.NewName
+            }
 
             ;* 补零填充和移除补零
             {
@@ -2425,8 +2772,13 @@ class ReName {
             }
 
 
-            ; 最后判断是否加上扩展名
-            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            ; 如果是文件最后还要判断是否加上扩展名
+            if (!item.IsDirectory) {
+                ; 最后判断是否加上扩展名
+                item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            } else {
+                item.NewName := test
+            }
         }
     }
 
@@ -2443,14 +2795,23 @@ class ReName {
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                test := item.NewName
+            }
 
             test := StringUtils.RegexReplace(test, rule.Regex, rule.ReplaceTo, {
                 ignoreCase: rule.IgnoreCase,
                 isExactMatch: rule.IsExactMatch
             })
 
-            ; 最后判断是否加上扩展名
-            item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            ; 如果是文件最后还要判断是否加上扩展名
+            if (!item.IsDirectory) {
+                ; 最后判断是否加上扩展名
+                item.NewName := test . (rule.IgnoreExt ? "." item.Ext : "")
+            } else {
+                item.NewName := test
+            }
         }
     }
 
@@ -2467,15 +2828,27 @@ class ReName {
 
             ; 拿到文件名(通过IgnoreCase判断是否包含扩展名)
             test := rule.IgnoreExt ? item.NewNameNoExt : item.NewName
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                test := item.NewName
+            }
 
-            if (rule.ignoreExt) {
-                ; 如果忽略拓展名则直接在原扩展名后面拼接新扩展名
+            ; 如果是目录则直接拿到文件名
+            if (item.IsDirectory) {
+                ; 对文件夹，直接在目录名后面添加后缀名
                 test .= "." rule.NewExt
             } else {
-                ; 如果不忽略则替换原本的扩展名
-                SplitPath(test, , , , &nameNoExt)
-                test := nameNoExt "." rule.NewExt
+                ; 对文件，判断是否忽略扩展名
+                if (rule.ignoreExt) {
+                    ; 如果忽略拓展名则直接在原扩展名后面拼接新扩展名
+                    test .= "." rule.NewExt
+                } else {
+                    ; 如果不忽略则替换原本的扩展名
+                    SplitPath(test, , , , &nameNoExt)
+                    test := nameNoExt "." rule.NewExt
+                }
             }
+
 
             item.NewName := test
         }

@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-#Include <Console>
+#Include Console.ahk
 
 ;! String工具扩展
 class StringUtils {

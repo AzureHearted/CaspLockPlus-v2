@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-#Include <JSON>
+#Include JSON.ahk
 
 ; 防止中文被转义
 JSON.EscapeUnicode := false

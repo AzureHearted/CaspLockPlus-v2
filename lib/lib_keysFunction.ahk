@@ -27,6 +27,7 @@
 
             ;* 防止当前线程被其他线程中断, 或使其能够被中断.
             Critical "On"
+
             ; 监听剪贴板，进行剪贴板显示
             OnClipboardChange(handle)
 
@@ -35,6 +36,7 @@
             ; 1 = 剪贴板包含可以用文本形式表示的内容(包括从资源管理器窗口复制的文件).
             ; 2 = 剪贴板包含完全是非文本的内容, 例如图片.
             handle(DataType) {
+                Critical "On"
                 try {
                     ;* 截取内容的前10个字符作为预览
                     content := Trim(A_Clipboard)
@@ -48,14 +50,13 @@
                     }
                     ; 超出的长度用……拼接
                     ; 显示剪贴的内容
-                    ShowToolTips(preview, 1500)
+                    ShowToolTips(preview, 1500, 20)
                     ; Console.Debug('DataType:' . DataType)
                     ; ShowToolTips('复制成功！')
                     OnClipboardChange(handle, 0)
                 } catch as e {
                     Console.Debug(e)
                 }
-
             }
         }
         keyFunc_d() {
@@ -137,7 +138,9 @@
         }
         keyFunc_s() {
             ; ➡️删除一个字符
-            SendInput('{Delete}')
+            ; SendInput('{Delete}')
+            ; SendEvent("{Delete}")
+            Send("{Delete}")
 
         }
         keyFunc_t() {
@@ -176,7 +179,8 @@
         }
         keyFunc_f2() {
             ; 呼出批量重命名窗口
-            UISets.batchRename.Show()
+            UISets.BatchReName.Show()
+            ; Run(A_Temp '\CapsLockPlus v2\ReNamer.ahk')
             ; Console.Debug('显示成功')
         }
         keyFunc_f3() {
@@ -395,7 +399,7 @@
             ; 获取选中的文件路径
             paths := GetSelectedExplorerItemsPaths()
             if (!paths.Length) {
-                ShowToolTips('没有选中文件(文件夹)')
+                ShowToolTips('没有选中文件(文件夹)', , 20)
                 return
             }
 
@@ -417,9 +421,9 @@
                 index++
             }
 
-            Console.Debug('获取路径：`n' output)
+            ; Console.Debug('获取路径：`n' output)
             A_Clipboard := output
-            ShowToolTips('获取路径：`n' showInfo, 1500)
+            ShowToolTips('获取路径：`n' showInfo, 1500, 20)
         }
         keyFunc_alt_d() {
         }
@@ -435,7 +439,7 @@
                 ; 如果默认Everything路径不存在，则查看进程中是否有Everything进程
                 if (!ProcessExist('Everything.exe')) {
                     ; 没有找到Everything进程则提示用户
-                    ShowToolTips('请确保Everything在后台运行')
+                    ShowToolTips('请确保Everything在后台运行', , 20)
                     return
                 }
                 ; 找到Everything进程后更新Everything进程路径
