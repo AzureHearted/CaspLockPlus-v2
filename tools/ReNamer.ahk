@@ -222,17 +222,6 @@ class BatchReName {
         }
 
         HotIf()
-
-    }
-
-
-    EnableDarkTitleBar(hwnd) {
-        DWMWA_USE_IMMERSIVE_DARK_MODE := 20
-        DllCall("Dwmapi\DwmSetWindowAttribute"
-            , "ptr", hwnd
-            , "int", DWMWA_USE_IMMERSIVE_DARK_MODE
-            , "int*", 1
-            , "int", 4)
     }
 
     /**
