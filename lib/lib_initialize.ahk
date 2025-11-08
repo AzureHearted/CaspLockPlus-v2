@@ -230,7 +230,7 @@ RegisterMouseGlobalHotkeys() {
             mxc := mx + wx
             myc := my + wy
 
-            Console.Debug('mx:' mx ',my:' my '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`tmxc:' mxc ',myc:' myc '`thWnd:' hWnd)
+            ; Console.Debug('mx:' mx ',my:' my '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`tmxc:' mxc ',myc:' myc '`thWnd:' hWnd)
 
             ;? 判断鼠标是否处于窗口顶部
             if (myc <= 0) {
