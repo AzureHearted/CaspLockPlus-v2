@@ -12,4 +12,3 @@
 ;todo 初始化
 Init()
 
-#Include user_keys.ahk ;* 导入用户自定义热键

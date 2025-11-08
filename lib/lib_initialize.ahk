@@ -23,6 +23,8 @@ try {
 #Include <lib_bindingWindow>
 #Include <KeysMap>
 #Include <CapsHotkey>
+#Include ../user_keys.ahk ;* 导入用户自定义热键
+
 
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
@@ -106,7 +108,6 @@ Init() {
     ; 通过 Shift + CapsLock 触发切换CapsLock
     Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
 
-
     ;* 装载图标
     LoadIcon()
 
@@ -129,6 +130,9 @@ Init() {
 
     ;* 注册默认CapsLook热键
     RegisterCapsLookDefaultHotkeys()
+    
+    ;* 注册用户CaspLook热键
+    RegisterUserCapsLookHotkeys()
 
     ShowToolTips('CapsLock Plus v2 已启动！')
 }
