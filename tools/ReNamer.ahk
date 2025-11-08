@@ -897,12 +897,32 @@ class BatchReName {
         this.UpdateStateBar()
     }
 
+    ; 读取 ListView 指定列的宽度（像素）
+    GetListViewColumnWidth(lv, colIndex) {
+        LVM_GETCOLUMNWIDTH := 0x1000 + 29 ; 0x101D
+        ; wParam = colIndex - 1 (0-based), lParam not used (0)
+        return DllCall("User32.dll\SendMessageW"
+            , "Ptr", lv.Hwnd
+            , "UInt", LVM_GETCOLUMNWIDTH
+            , "Ptr", colIndex - 1
+            , "Ptr", 0
+            , "Int")
+    }
+
     ;*更新文件ListView
     UpdateFileListView() {
-        this.listFileView.ModifyCol(1, 'AutoHdr')
-        this.listFileView.ModifyCol(2, 'AutoHdr')
-        this.listFileView.ModifyCol(3, 'AutoHdr')
-        this.listFileView.ModifyCol(4, 'AutoHdr')
+        lv := this.listFileView
+        lv.ModifyCol(1, 'AutoHdr')
+        lv.ModifyCol(2, 'AutoHdr')
+        lv.ModifyCol(3, 'AutoHdr')
+        lv.ModifyCol(4, 'AutoHdr')
+
+        for (indexCol in Array(2, 3)) {
+            ; 限制2、3列自动宽度不超过180
+            if (this.GetListViewColumnWidth(lv, indexCol) > 180) {
+                lv.ModifyCol(indexCol, 180)
+            }
+        }
     }
 
     /**
