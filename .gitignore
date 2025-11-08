@@ -1,6 +1,6 @@
-CapsLockPlus v1 (参考)/
-ReName/
-
+CapsLockPlus v1 (参考)/**/*
+ReName/**/*
+tools/ReNamer.exe
 
 /*.exe
 /*.ini
