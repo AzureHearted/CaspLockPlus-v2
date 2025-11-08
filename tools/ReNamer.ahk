@@ -13,6 +13,7 @@ JSON.EscapeUnicode := false
 ; StartAlone()
 
 StartAlone() {
+    TraySetIcon("../res/ReNamer.ico")
     ; MsgBox("模式：单独启动")
     Console.Debug("模式：单独启动")
     ReNameUI := BatchReName()
