@@ -798,7 +798,7 @@ class BatchReName {
 
             if (file.IsDirectory) {
                 ; 判断是否记录文件夹
-                if (this.checkFilterFolder) {
+                if (this.checkFilterFolder.Value) {
                     ; 判断是否匹配过滤器
                     if (this.editorFilterFolder.Value) {
                         if (file.Path ~= "i)" this.editorFilterFolder.Value) {
