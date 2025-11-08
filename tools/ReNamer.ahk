@@ -780,7 +780,7 @@ class BatchReName {
     }
 
     /**
-     * 拖拽文件回调
+     * *拖拽文件回调
      * @param {Object} GuiCtrlObj 
      * @param {Array} FileArray 文件路径列表
      * @param {Integer} X 文件拖拽位置的 X 坐标, 相对于窗口客户端区域的左上角.

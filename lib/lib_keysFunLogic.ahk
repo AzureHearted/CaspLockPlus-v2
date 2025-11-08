@@ -65,7 +65,10 @@ funcLogic_capsHold() {
 }
 
 ;f 复制
-funcLogic_copy() {
+funcLogic_copy(showTips := false) {
+    ;* 防止当前线程被其他线程中断, 或使其能够被中断.
+    Critical "On"
+
     if (WinActive('ahk_class CabinetWClass')) {
         SendInput('^{Insert}')
 
@@ -73,6 +76,74 @@ funcLogic_copy() {
         SendInput('^c')
     }
 
+    if (!showTips)
+        return
+
+    ; 监听剪贴板，进行剪贴板显示
+    OnClipboardChange(handle)
+
+    ; DateType 参数
+    ; 0 = 剪贴板当前为空.
+    ; 1 = 剪贴板包含可以用文本形式表示的内容(包括从资源管理器窗口复制的文件).
+    ; 2 = 剪贴板包含完全是非文本的内容, 例如图片.
+    handle(DataType) {
+        Critical "On"
+        try {
+            ;* 截取内容的前10个字符作为预览
+            content := Trim(A_Clipboard)
+            length := StrLen(content)
+            preview := SubStr(content, 1, 15)
+            lengthPreview := StrLen(preview)
+            if (length > lengthPreview) {
+                ; 计算差值
+                diff := length - lengthPreview
+                preview .= '……(等' . diff . '个字符)'
+            }
+            ; 超出的长度用……拼接
+            ; 显示剪贴的内容
+            ShowToolTips(preview, 1000, 20)
+            ; Console.Debug('DataType:' . DataType)
+            ; ShowToolTips('复制成功！')
+            OnClipboardChange(handle, 0)
+        } catch as e {
+            Console.Debug(e)
+        }
+    }
+
+}
+
+;f 复制所选文件路径
+funcLogic_copy_selected_paths() {
+    ;* 防止当前线程被其他线程中断, 或使其能够被中断.
+    Critical "On"
+    ; 获取选中的文件路径
+    paths := GetSelectedExplorerItemsPaths()
+    if (!paths.Length) {
+        ShowToolTips('没有选中文件(文件夹)', , 20)
+        return
+    }
+
+    output := ''
+    showInfo := ''
+
+    index := 1
+    for (path in paths) {
+        output .= path (index < paths.Length ? '`n' : '')
+
+        ; 显示showInfo显示的行数量
+        if (index <= 5) {
+            showInfo := output
+            if (paths.Length - index > 0) {
+                showInfo .= "…… (等 " (paths.Length - index) " 条结果)"
+            }
+        }
+
+        index++
+    }
+
+    ; Console.Debug('获取路径：`n' output)
+    A_Clipboard := output
+    ShowToolTips('获取路径：`n' showInfo, 1500, 20)
 }
 
 ;f 粘贴
@@ -205,12 +276,14 @@ funcLogic_winPin() {
 
 ;f 系统音量增加
 funcLogic_volumeUp() {
+    Critical "On"
+    Console.Debug("增加音量")
     SendInput('{Volume_Up}')
-    return
 }
 
 ;f 系统音量减少
 funcLogic_volumeDown() {
+    Critical "On"
+    Console.Debug("降低音量")
     SendInput('{Volume_Down}')
-    return
 }

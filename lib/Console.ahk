@@ -33,7 +33,7 @@ class Console {
      * @param {Error} e 错误信息对象
      */
     static Error(e) {
-        this.Debug("`n发生错误：" e.File " (" e.Line "行) `n错误信息：" e.Message "`n错误原因：" e.What)
+        this.Debug("`n发生错误：" e.File " (" e.Line "行) `n错误原因：" e.What "`n错误信息：" e.Message)
     }
 
     /**

@@ -8,7 +8,7 @@ class AlwaysOnTopControl {
   picUrl := A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.png'
   ; 偏移量
   scale := A_ScreenDPI / 96 ; 获取缩放比例
-  size := 24 * this.scale
+  size := 20 * this.scale
   offsetX := -180 * this.scale
   offsetY := 4 * this.scale
 

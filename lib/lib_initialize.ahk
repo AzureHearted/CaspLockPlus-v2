@@ -6,7 +6,6 @@ try {
     FileInstall('lib/WebView2/32bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_32bit.dll', 1)
     FileInstall('lib/WebView2/64bit/WebView2Loader.dll', A_Temp '\CapsLockPlus v2\WebView2Loader_64bit.dll', 1)
     FileInstall('tools/WindowSpy.exe', A_Temp '\CapsLockPlus v2\WindowSpy.exe', 1)
-    FileInstall('tools/ReNamer.ahk', A_Temp '\CapsLockPlus v2\ReNamer.ahk', 1)
     FileInstall('res/keysMap.html', A_Temp '\CapsLockPlus v2\keysMap.html', 1)
     FileInstall('res/CapsLockPlusIcon.ico', A_Temp '\CapsLockPlus v2\CapsLockPlusIcon.ico', 1)
     FileInstall('res/cancelAlwaysOnTop.png', A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.png', 1)
@@ -14,23 +13,29 @@ try {
     Console.Debug('释放依赖过程中发生意外错误`n' . ex.Message)
 }
 
-
+#Include <Console>
 #Include <Array>
+#Include <StringUtils>
 #Include <lib_functions>
+#Include <lib_keysFunLogic>
 #Include <lib_userHotString>
 #Include <lib_userTips>
-#Include <Console>
+#Include <lib_bindingWindow>
+#Include <KeysMap>
+#Include <CapsHotkey>
+
 #Include ../gui/ui_setting.ahk
 #Include ../gui/ui_webview.ahk
 #Include ../tools/ReNamer.ahk
 
+
 ;! 忽略DPI缩放(必须在创建GUI之前调用)
 DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -1)
-
 
 ; A_MaxHotkeysPerInterval和A_HotkeyInterval变量控制热键激活的速率, 超过此速率将显示警告对话框.
 A_MaxHotkeysPerInterval := 500
 A_HotkeyInterval := 0
+
 
 ;! 确保以管理员身份运行
 full_command_line := DllCall("GetCommandLine", "str")
@@ -82,16 +87,26 @@ global UISets := {
     batchRename: BatchReName()
 }
 
-;* 托盘菜单
-TrayMenu := A_TrayMenu
-; TrayMenu.Delete()
-; TrayMenu.Add("暂停热键",handle)
-; handled(*){
+;* 绑定默认的CapsLook热键
+/** @type {CapsHotkey} */
+CapsLookPlus := CapsHotkey()
 
-; }
 
 ;! 初始化
 Init() {
+    ;* 设置启动脚本时默认CapsLock状态关闭
+    SetCapsLockState("Off")
+
+    /** 阻止默认CapsLock事件 */
+    Hotkey('*CapsLock', (*) => false)
+
+    ; 按下 CapsLock 后触发 CapsLock 按下事件
+    Hotkey('CapsLock', (*) => funcLogic_capsHold())
+
+    ; 通过 Shift + CapsLock 触发切换CapsLock
+    Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
+
+
     ;* 装载图标
     LoadIcon()
 
@@ -101,8 +116,19 @@ Init() {
     ;* 检测并修复配置生效状态
     CheckAndFixSettingsStatus()
 
-    ;* 开启用户则字符串
+    ;* 开启用户热字符串
     UserHotStr.Enable()
+
+    ;* 托盘菜单
+    InitTrayMenu()
+
+    ;* 注册鼠标全局热键
+    RegisterMouseGlobalHotkeys()
+
+    CapsLookPlus.Init()
+
+    ;* 注册默认CapsLook热键
+    RegisterCapsLookDefaultHotkeys()
 
     ShowToolTips('CapsLock Plus v2 已启动！')
 }
@@ -177,51 +203,309 @@ CheckAndFixSettingsStatus() {
     UISets.hotTips.transparent := UserConfig.HotTipsTransparent
 }
 
-;! 全局热键
-CapsCondition(*) => GetKeyState("CapsLock", "P")
+;* 初始化托盘菜单
+InitTrayMenu() {
+    ;* 托盘菜单
+    ; TrayMenu := A_TrayMenu
+}
 
-/** 阻止默认CapsLock事件 */
-Hotkey('*CapsLock', (*) => false)
+;* 注册鼠标全局事件
+RegisterMouseGlobalHotkeys() {
+    ;! 鼠标事件绑定
+    Hotkey('WheelDown', MouseWheelHandle)
+    Hotkey('WheelUp', MouseWheelHandle)
 
-; 按下 CapsLock 后触发 CapsLock 按下事件
-Hotkey('CapsLock', (*) => funcLogic_capsHold())
+    /**
+     * 鼠标滚动事件执行器
+     * @param {'WheelDown'|'WheelUp'} HotkeyName 触发的热键
+     */
+    MouseWheelHandle(HotkeyName) {
+        try {
+            MouseGetPos(&mx, &my)
+            hwnd := WinActive('A')
+            if (!hwnd)
+                return
+            WinGetPos(&wx, &wy, &ww, &wh, 'ahk_id' hwnd)
+            ;? 计算当前鼠标相对窗口的位置
+            mxc := mx + wx
+            myc := my + wy
 
-; 通过 Shift + CapsLock 触发切换CapsLock
-Hotkey('+CapsLock', (*) => funcLogic_capsSwitch())
+            Console.Debug('mx:' mx ',my:' my '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`tmxc:' mxc ',myc:' myc '`thWnd:' hWnd)
 
-;! 鼠标事件绑定
-Hotkey('WheelDown', MouseWheelHandle)
-Hotkey('WheelUp', MouseWheelHandle)
-
-/**
- * 鼠标滚动事件执行器
- * @param {'WheelDown'|'WheelUp'} HotkeyName 触发的热键
- */
-MouseWheelHandle(HotkeyName) {
-    try {
-        MouseGetPos(&mx, &my)
-        hwnd := WinActive('A')
-        if (!hwnd)
-            return
-        WinGetPos(&wx, &wy, &ww, &wh, 'ahk_id' hwnd)
-        ;? 计算当前鼠标相对窗口的位置
-        mxc := mx + wx
-        myc := my + wy
-
-        ; Console.Debug('mx:' mx ',my:' my '`twx:' wx ',wy:' wy ',ww:' ww ',wh:' wh '`tmxc:' mxc ',myc:' myc '`thWnd:' hWnd)
-
-        ;? 判断鼠标是否处于窗口顶部
-        if (myc <= 0) {
-            switch (HotkeyName) {
-                case 'WheelUp': funcLogic_volumeUp()
-                case 'WheelDown': funcLogic_volumeDown()
+            ;? 判断鼠标是否处于窗口顶部
+            if (myc <= 0) {
+                switch (HotkeyName) {
+                    case 'WheelUp': funcLogic_volumeUp()
+                    case 'WheelDown': funcLogic_volumeDown()
+                }
+            } else {
+                ; 判断鼠标是否在窗口的前 20 像素内（窗口区域顶部）
+                SendInput(Format('{{1}}', HotkeyName))
             }
-        } else {
-            ; 判断鼠标是否在窗口的前 20 像素内（窗口区域顶部）
+        } catch as e {
+            Console.Error(e)
             SendInput(Format('{{1}}', HotkeyName))
         }
-    } catch as e {
-        Console.Error(e)
-        SendInput(Format('{{1}}', HotkeyName))
     }
+}
+
+;* 注册CapsLook的默认热键
+RegisterCapsLookDefaultHotkeys() {
+    global CapsLookPlus
+    ; 向⬅️删除一个字符
+    CapsLookPlus.AddHotkey("$A", "{Backspace}")
+    ; 删除光标⬅️边至行首
+    CapsLookPlus.AddHotkey("$+A", "+{Home}{Backspace}")
+    ; 向➡️删除一个字符
+    CapsLookPlus.AddHotkey("$S", "{Delete}")
+    ; 删除光标右边至行末
+    CapsLookPlus.AddHotkey("$+S", "+{End}{Backspace}")
+
+    ; Win + V (系统剪贴板)
+    CapsLookPlus.AddHotkey("$B", "#{v}")
+    ; 复制
+    CapsLookPlus.AddHotkey("$C", (k) => funcLogic_copy(true))
+    ; 粘贴
+    CapsLookPlus.AddHotkey("$V", (k) => funcLogic_paste())
+    ; 复制所选文件路径
+    CapsLookPlus.AddHotkey("$!C", (k) => funcLogic_copy_selected_paths())
+
+    ; Ctrl + S (保存)
+    CapsLookPlus.AddHotkey("$E", "^{s}")
+    ; Ctrl + F (🔍搜索)
+    CapsLookPlus.AddHotkey("$F", "^{f}")
+    ; 菜单键
+    CapsLookPlus.AddHotkey("$G", "{AppsKey}")
+
+    ; ⬅️跳词
+    CapsLookPlus.AddHotkey("$H", "^{Left}")
+    ; ⬅️跳词选择
+    CapsLookPlus.AddHotkey("$!H", "^+{Left}")
+    ; ⬅️跳词删除
+    CapsLookPlus.AddHotkey("$!A", "^{Backspace}")
+
+    ; ➡️跳词
+    CapsLookPlus.AddHotkey("$;", "^{Right}")
+    ; ➡️跳词选择
+    CapsLookPlus.AddHotkey("$!;", "^+{Right}")
+    ; ➡️跳词删除
+    CapsLookPlus.AddHotkey("$!S", "^{Delete}")
+
+    ; 方向键映射⬆️
+    CapsLookPlus.AddHotkey("$I", "{UP}")
+    ; 向⬆️选择
+    CapsLookPlus.AddHotkey("$!I", "+{UP}")
+    ; 向⬆️翻页
+    CapsLookPlus.AddHotkey("$+I", "{PgUp}")
+    ; 方向键映射⬅️
+    CapsLookPlus.AddHotkey("$J", "{Left}")
+    ; 向⬅️选择
+    CapsLookPlus.AddHotkey("$!J", "+{Left}")
+    ; 方向键映射⬇️
+    CapsLookPlus.AddHotkey("$K", "{Down}")
+    ; 向⬇️选择
+    CapsLookPlus.AddHotkey("$!K", "+{Down}")
+    ; 向⬇️翻页
+    CapsLookPlus.AddHotkey("$+K", "{PgDn}")
+    ; 方向键映射➡️
+    CapsLookPlus.AddHotkey("$L", "{Right}")
+    ; 向➡️选择
+    CapsLookPlus.AddHotkey("$!L", "+{Right}")
+
+    ; 删除当前行
+    CapsLookPlus.AddHotkey("$D", (k) => funcLogic_deleteLine())
+
+    ; 向⬆️另起一行
+    CapsLookPlus.AddHotkey("$Enter", "{Up}{End}{Enter}")
+    ; 向⬇️另起一行
+    CapsLookPlus.AddHotkey("$!Enter", "{End}{Enter}")
+
+    ; 复制当前行到下一行
+    CapsLookPlus.AddHotkey("$M", (k) => (funcLogic_copyLineDown(), KeyWait('M')))
+    ; 复制当前行到上一行
+    CapsLookPlus.AddHotkey("$N", (k) => (funcLogic_CopyLineUp(), KeyWait('M')))
+
+    ; 光标定位到行首
+    CapsLookPlus.AddHotkey("$U", "{Home}")
+    ; 从当前光标选至行首
+    CapsLookPlus.AddHotkey("$!U", "+{Home}")
+    ; 定位到文档开头
+    CapsLookPlus.AddHotkey("$+U", "^{Home}")
+
+    ; 光标定位到行尾
+    CapsLookPlus.AddHotkey("$O", "{End}")
+    ; 从当前光标选至行末
+    CapsLookPlus.AddHotkey("$!O", "+{End}")
+    ; 定位到文档结尾
+    CapsLookPlus.AddHotkey("$+O", "^{End}")
+
+    ; Esc
+    CapsLookPlus.AddHotkey("$P", "{Escape}")
+    ; Tab键
+    CapsLookPlus.AddHotkey("$Space", "{Tab}")
+
+    ; 注释当前行
+    CapsLookPlus.AddHotkey("$R", "^/")
+
+    ; 剪切 Ctrl + x
+    CapsLookPlus.AddHotkey("$X", "^{x}")
+    ; 还原 Ctrl + y
+    CapsLookPlus.AddHotkey("$Y", "^{y}")
+    ; 撤销 Ctrl + z0
+    CapsLookPlus.AddHotkey("$Z", "^{z}")
+
+    ; Ctrl + Tab切换标签页
+    CapsLookPlus.AddHotkey("$+J", "^{Tab}")
+    ; Ctrl + Shift + Tab切换标签页
+    CapsLookPlus.AddHotkey("$+L", "^+{Tab}")
+
+    ; 关闭标签页 Ctrl + w
+    CapsLookPlus.AddHotkey("$W", "^{w}")
+    ; Alt + F4 关闭软件
+    CapsLookPlus.AddHotkey("$!W", "!{F4}")
+
+    ; 置顶 / 解除置顶一个窗口
+    CapsLookPlus.AddHotkey("$F1", (k) => funcLogic_winPin())
+    ; 呼出批量重命名窗口
+    CapsLookPlus.AddHotkey("$F2", (k) => UISets.BatchReName.Show())
+    /** 打开窗口检查器 */
+    CapsLookPlus.AddHotkey("$F9", (k) => Run(A_Temp '\CapsLockPlus v2\WindowSpy.exe'))
+    /** WebView2浏览器 */
+    CapsLookPlus.AddHotkey("$F10", (k) => UISets.keysMap.Show())
+    ; 重载脚本
+    CapsLookPlus.AddHotkey("$F11", (k) => Reload())
+    /** 设置窗口 */
+    CapsLookPlus.AddHotkey("$F12", (k) => UISets.setting.Show())
+
+    ; 窗口绑定相关
+    ; 激活
+    CapsLookPlus.AddHotkey("$``", (k) => BindingWindow.Active('``'))
+    CapsLookPlus.AddHotkey("$1", (k) => BindingWindow.Active('1'))
+    CapsLookPlus.AddHotkey("$2", (k) => BindingWindow.Active('2'))
+    CapsLookPlus.AddHotkey("$3", (k) => BindingWindow.Active('3'))
+    CapsLookPlus.AddHotkey("$4", (k) => BindingWindow.Active('4'))
+    CapsLookPlus.AddHotkey("$5", (k) => BindingWindow.Active('5'))
+    CapsLookPlus.AddHotkey("$6", (k) => BindingWindow.Active('6'))
+    CapsLookPlus.AddHotkey("$7", (k) => BindingWindow.Active('7'))
+    CapsLookPlus.AddHotkey("$8", (k) => BindingWindow.Active('8'))
+    ; 绑定
+    CapsLookPlus.AddHotkey("$!``", (k) => BindingWindow.Binding('``'))
+    CapsLookPlus.AddHotkey("$!1", (k) => BindingWindow.Binding('1'))
+    CapsLookPlus.AddHotkey("$!2", (k) => BindingWindow.Binding('2'))
+    CapsLookPlus.AddHotkey("$!3", (k) => BindingWindow.Binding('3'))
+    CapsLookPlus.AddHotkey("$!4", (k) => BindingWindow.Binding('4'))
+    CapsLookPlus.AddHotkey("$!5", (k) => BindingWindow.Binding('5'))
+    CapsLookPlus.AddHotkey("$!6", (k) => BindingWindow.Binding('6'))
+    CapsLookPlus.AddHotkey("$!7", (k) => BindingWindow.Binding('7'))
+    CapsLookPlus.AddHotkey("$!8", (k) => BindingWindow.Binding('8'))
+
+    ; 用()包裹选中内容
+    CapsLookPlus.AddHotkey("$9", (k) => funcLogic_doubleChar("(", ")"))
+    ; 用中文圆括号包裹选中内容
+    CapsLookPlus.AddHotkey("$!9", (k) => funcLogic_doubleChar("（", "）"))
+    ; 用{}包裹选中内容
+    CapsLookPlus.AddHotkey("$[", (k) => funcLogic_doubleChar("{", "}"))
+    ; 用[]包裹选中内容
+    CapsLookPlus.AddHotkey("$]", (k) => funcLogic_doubleChar("[", "]"))
+    ; 用【】包裹选中内容
+    CapsLookPlus.AddHotkey("$!]", (k) => funcLogic_doubleChar("【", "】"))
+    ; 用""包裹选中内容
+    CapsLookPlus.AddHotkey("$'", (k) => funcLogic_doubleChar('"'))
+    ; 用 “” 包裹选中内容
+    CapsLookPlus.AddHotkey("$!'", (k) => funcLogic_doubleChar("“", "”"))
+    ; 用<>包裹选中内容
+    CapsLookPlus.AddHotkey("$,", (k) => funcLogic_doubleChar("<", ">"))
+    ; 用《》包裹选中内容
+    CapsLookPlus.AddHotkey("$!,", (k) => funcLogic_doubleChar("《", ">"))
+
+
+    ; 将选中的英文转为小写
+    CapsLookPlus.AddHotkey("$!M", (k) => funcLogic_switchSelLowerCase())
+    ; 将选中的英文转为大写
+    CapsLookPlus.AddHotkey("$!N", (k) => funcLogic_switchSelUpperCase())
+
+    ; 音量增加
+    CapsLookPlus.AddHotkey("$=", (k) => funcLogic_volumeUp())
+    CapsLookPlus.AddHotkey("$WheelUp", (k) => funcLogic_volumeUp())
+    ; 音量降低
+    CapsLookPlus.AddHotkey("$-", (k) => funcLogic_volumeDown())
+    CapsLookPlus.AddHotkey("$WheelDown", (k) => funcLogic_volumeDown())
+
+
+    ; 呼出Quicker搜索框，并填入选中内容(如果有)
+    CapsLookPlus.AddHotkey("$Q", (k) => HandleCallQuicker())
+    HandleCallQuicker() {
+        id := WinExist('Quicker搜索')
+        Run("quicker:search:")
+        if (!id) {
+            hwnd := WinWait('Quicker搜索')
+            WinActivate('ahk_id' hwnd)
+            ; Console.Debug('已聚焦')
+        }
+    }
+
+    ; todo 打开Everything并🔍搜索选中内容
+    CapsLookPlus.AddHotkey("$!F", (k) => HandelCallEverything())
+    HandelCallEverything() {
+        ; 获取选中文本
+        text := GetSelText()
+        ; 读取ini中记录的Everything路径
+        pathEverythingExe := IniRead('setting.ini', 'Everything', 'path', "C:\Program Files\Everything\Everything.exe")
+
+        if (!FileExist(pathEverythingExe)) {
+            ; 如果默认Everything路径不存在，则查看进程中是否有Everything进程
+            pid := ProcessExist('Everything.exe')
+            if (!pid) {
+                ; 没有找到Everything进程则提示用户
+                ShowToolTips('请确保Everything在后台运行', , 20)
+                return
+            }
+            ; 找到Everything进程后更新Everything进程路径
+            pathEverythingExe := ProcessGetPath('Everything.exe')
+            ; 更新配置文件中记录的Everything路径
+            IniWrite(pathEverythingExe, 'setting.ini', 'Everything', 'path')
+        }
+        ; 通过命令行调用Everything搜索
+        if (id := WinExist("ahk_exe Everything.exe")) {
+            WinActivate("ahk_exe Everything.exe")
+            ControlSetText(text, "Edit1")
+        } else {
+            Run(pathEverythingExe ' -s "' text '"')
+            hwnd := WinWait('ahk_class EVERYTHING')
+            WinActivate('ahk_id' hwnd)
+        }
+    }
+
+    ; office 等软件的带样式粘贴 Ctrl + Alt + V
+    CapsLookPlus.AddHotkey("$!V", (k) => HandlePasteByOffice())
+    HandlePasteByOffice() {
+        if (WinActive('ahk_exe EXCEL.EXE') || WinActive('ahk_exe wps.exe') || WinActive('ahk_class XLMAIN')) {
+            ; Ctrl + Alt + V
+            SendInput('^!v')
+        }
+    }
+
+    ; Ctrl + Win + Right 切换下一个虚拟窗口
+    CapsLookPlus.AddHotkey("$+E", "^#{Right}")
+    ; Ctrl + Win + left 切换上一个虚拟窗口
+    CapsLookPlus.AddHotkey("$+Q", "^#{Left}")
+    ; Ctrl + Win + D 创建虚拟窗口
+    CapsLookPlus.AddHotkey("$+R", "^#{d}")
+    ; Ctrl + Win + F4 关闭当前虚拟窗口
+    CapsLookPlus.AddHotkey("$+W", "^#{F4}")
+
+
+    ; 鼠标左键 (禁用空的事件还原默认事件)
+    CapsLookPlus.DisableHotkey("$LButton")
+    CapsLookPlus.DisableHotkey("$MButton")
+    CapsLookPlus.DisableHotkey("$RButton")
+    CapsLookPlus.DisableHotkey("$!LButton")
+    CapsLookPlus.DisableHotkey("$!MButton")
+    CapsLookPlus.DisableHotkey("$!RButton")
+    CapsLookPlus.DisableHotkey("$+LButton")
+    CapsLookPlus.DisableHotkey("$+MButton")
+    CapsLookPlus.DisableHotkey("$+RButton")
+    CapsLookPlus.DisableHotkey("$^LButton")
+    CapsLookPlus.DisableHotkey("$^MButton")
+    CapsLookPlus.DisableHotkey("$^RButton")
 }
