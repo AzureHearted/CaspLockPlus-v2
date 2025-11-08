@@ -23,7 +23,7 @@ WinSpyGui() {
     oGui.OnEvent("Close", WinSpyClose)
     oGui.OnEvent("Size", WinSpySize)
 
-    oGui.SetFont('s9', "Segoe UI")
+    oGui.SetFont('s9', "Microsoft YaHei")
 
     oGui.Add("Text", , "窗口标题、类名和进程:")
     oGui.Add("Checkbox", "yp xp+200 w120 Right vCtrl_FollowMouse", "跟随鼠标").Value := 1

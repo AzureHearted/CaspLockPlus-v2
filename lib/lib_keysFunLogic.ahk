@@ -8,7 +8,6 @@ funcLogic_capsSwitch() {
     CapsLockOpen := !CapsLockOpen
     SetCapsLockState(CapsLockOpen)
     ShowToolTips("CapsLock键(已" (CapsLockOpen ? '开启' : '关闭') ")")
-    return
 }
 
 ;! CapsLock 按住逻辑
@@ -24,9 +23,10 @@ funcLogic_capsHold() {
     }
 
     CapsLockHold := true
+    isDbClick := false ; 是否已经双击选项了(每次每一次显示一旦isDbClick被置为true则直接停止循环)
     mouseButtons := ["MButton", "LButton", "RButton", "WheelUp", "WheelDown"]
     ; Console.Debug('-----开始计时-----' A_TickCount - timer)
-    while (GetKeyState('CapsLock', 'P') && (A_ThisHotkey == "CapsLock" || StrIncludesAny(A_ThisHotkey, mouseButtons))) {
+    while (!isDbClick && GetKeyState('CapsLock', 'P') && (A_ThisHotkey == "CapsLock" || StrIncludesAny(A_ThisHotkey, mouseButtons))) {
         if (UISets.hotTips.isShow) {
             Sleep(50)
             continue
@@ -48,10 +48,15 @@ funcLogic_capsHold() {
                     path := IniRead('winsInfosRecorder.ini', key, 'path', '')
                     tipsMsg .= key ":`t" ahk_exe "`n"
                     iconNumber := UISets.hotTips.LoadIcon(path)
-                    UISets.hotTips.AddTipItem(iconNumber, ahk_exe, key)
+                    title := IniRead('winsInfosRecorder.ini', key, 'ahk_title', '')
+                    UISets.hotTips.AddTipItem(iconNumber, title, ahk_exe, key)
                 }
                 ; Console.Debug(tipsMsg)
-                UISets.hotTips.Show()
+                UISets.hotTips.Show((key) => (
+                    BindingWindow.Active(key),
+                    isDbClick := true
+                ))
+
             }
         }
         Sleep(50)
@@ -277,13 +282,13 @@ funcLogic_winPin() {
 ;f 系统音量增加
 funcLogic_volumeUp() {
     Critical "On"
-    Console.Debug("增加音量")
+    ; Console.Debug("增加音量")
     SendInput('{Volume_Up}')
 }
 
 ;f 系统音量减少
 funcLogic_volumeDown() {
     Critical "On"
-    Console.Debug("降低音量")
+    ; Console.Debug("降低音量")
     SendInput('{Volume_Down}')
 }

@@ -77,8 +77,7 @@ class BatchReName {
         /** @type {UIRuleEdit} */
         this.RuleEdit := UIRuleEdit(this)
 
-        ; this.gui := Gui('', '批量重命名')
-        this.gui.SetFont('q5 s10', "Microsoft YaHei")
+        this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
 
         this.gui.MarginX := this.gapX
         this.gui.MarginY := this.gapY

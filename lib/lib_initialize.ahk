@@ -80,6 +80,7 @@ global UserConfig := {
 
 ;* UI集合
 global UISets := {
+    ; /** @type {UISetting} */
     setting: UISetting('settings.ini'), ; 设置窗口
     ; hotTips: UITips('已绑定的窗口`t', ["进程", "按键"]), ; Caps按住一段时间后的提示窗口及内容
     hotTips: UserTips(), ; Caps按住一段时间后的提示窗口及内容
@@ -88,6 +89,7 @@ global UISets := {
     }),
     batchRename: BatchReName()
 }
+
 
 ;* 绑定默认的CapsLook热键
 /** @type {CapsHotkey} */
@@ -130,7 +132,7 @@ Init() {
 
     ;* 注册默认CapsLook热键
     RegisterCapsLookDefaultHotkeys()
-    
+
     ;* 注册用户CaspLook热键
     RegisterUserCapsLookHotkeys()
 

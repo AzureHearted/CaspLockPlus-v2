@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-
+#Include <Console>
 #Include ../gui/ui_tips.ahk
 
 class UserTips extends UITips {
@@ -12,25 +12,63 @@ class UserTips extends UITips {
 
   __New() {
     super.__New('已绑定的窗口')
-    defColumns := ["进程", "按键"]
+    defColumns := ["标题", "进程", "按键"]
 
     ; tip内容
-    this.listView := this.gui.AddListView("xm r8 ReadOnly NoSort NoSortHdr -E0x200", defColumns)
+    this.listView := this.gui.AddListView("xm r8 ReadOnly NoSort NoSortHdr -E0x200 ", defColumns)
 
     ; 创建图像列表, 这样 ListView 才可以显示图标:
     this.ImageListID := IL_Create(10)
 
     ; 将图像列表附加到 ListView 上, 这样它就可以在以后显示图标:
     this.listView.SetImageList(this.ImageListID)
+
+    this.listView.OnEvent("DoubleClick", (GuiCtrlObj, rowIndex) => this.OnDbClick(GuiCtrlObj, rowIndex))
+
   }
 
-  ; 显示窗口
-  Show() {
-    ; 自动列宽
-    this.listView.ModifyCol(1, 'AutoHdr')
-    ; 自动列宽 + 逻辑排序
-    this.listView.ModifyCol(2, 'AutoHdr Logical Sort')
+  OnDbClick(GuiCtrlObj, rowIndex) {
+    ; Console.Debug(this.listView.GetText(rowIndex, 3))
+    key := this.listView.GetText(rowIndex, 3)
+    this.Hidden()
+    Sleep(100)
+    this.userOnDbClick.Call(key)
+  }
+
+  /** @type {Func} */
+  userOnDbClick := () => {}
+
+  /**
+   * 显示窗口
+   * @param {Func} OnDbClick 双击选项时候的回调
+   */
+  Show(OnDbClick) {
+    lv := this.listView
+    this.userOnDbClick := OnDbClick
     super.Show()
+    ; 自动列宽
+    lv.ModifyCol(1, 'AutoHdr')
+    lv.ModifyCol(2, 'AutoHdr')
+    ; 自动列宽 + 逻辑排序
+    lv.ModifyCol(3, 'AutoHdr Logical Sort')
+
+
+    ; 限制2、3列自动宽度不超过180
+    if (this.GetListViewColumnWidth(lv, 1) > 180) {
+      lv.ModifyCol(1, 180)
+    }
+  }
+
+  ; 读取 ListView 指定列的宽度（像素）
+  GetListViewColumnWidth(lv, colIndex) {
+    LVM_GETCOLUMNWIDTH := 0x1000 + 29 ; 0x101D
+    ; wParam = colIndex - 1 (0-based), lParam not used (0)
+    return DllCall("User32.dll\SendMessageW"
+      , "Ptr", lv.Hwnd
+      , "UInt", LVM_GETCOLUMNWIDTH
+      , "Ptr", colIndex - 1
+      , "Ptr", 0
+      , "Int")
   }
 
   ; 隐藏窗口

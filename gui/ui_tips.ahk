@@ -1,36 +1,37 @@
 #Requires AutoHotkey v2.0
+#Include <GuiEnhancerKit>
 
 ;! 提示窗口
 class UITips {
-    /** @type {Gui} */
-    gui := ''
+    /** @type {GuiExt} */
+    gui := ""
 
     ; 窗口是否显示
     isShow := false
     ; 窗口透明度
     transparent := 200
     ; 缩放率
-    ; scale := A_ScreenDPI / 96
     scale := A_ScreenDPI / 96
 
     __New(title := "提示") {
 
-        this.gui := Gui('+AlwaysOnTop -SysMenu +ToolWindow -Caption +Border')
+        this.gui := GuiExt("+AlwaysOnTop +ToolWindow -DPIScale -Caption -DPIScale")
+        this.gui.SetFont("q5 s14", "Microsoft YaHei UI")
         ; 基础样式
-        this.gui.MarginX := 6
-        this.gui.MarginY := 6
-        ; this.gui.MarginX := 4
-        ; this.gui.MarginY := 4
-        this.gui.SetFont('q5 s' (12), 'Microsoft YaHei UI')
+        this.gui.MarginX := 10
+        this.gui.MarginY := 10
+
         ; 标题
-        this.title := this.gui.AddText('r1.4 Center', title)
-        this.title.SetFont('q5 s' (16 * 1) ' W600', 'Microsoft YaHei UI')
+        ; this.title := this.gui.AddText("r1.4 Center", title)
+        this.title := this.gui.AddText("BackgroundC9f01e9 cwhite r1.6 Center", title)
+        this.title.SetRounded()
+        this.title.SetFont("q5 s20", "Microsoft YaHei UI")
 
         ; 事件绑定
-        this.gui.OnEvent('Size', (guiObj, MinMax, wClientWidth, wClientHeight) => this.OnWindowResize(guiObj, MinMax, wClientWidth, wClientHeight))
-        this.gui.OnEvent('Close', (*) => (this.isShow := false))
+        this.gui.OnEvent("Size", (guiObj, MinMax, wClientWidth, wClientHeight) => this.OnWindowResize(guiObj, MinMax, wClientWidth, wClientHeight))
+        this.gui.OnEvent("Close", (*) => (this.isShow := false))
 
-        this.CallAlwaysOnTopHandle := ObjBindMethod(this, 'AlwaysOnTopHandle')
+        this.CallAlwaysOnTopHandle := ObjBindMethod(this, "AlwaysOnTopHandle")
 
     }
 
@@ -43,11 +44,8 @@ class UITips {
      */
     OnWindowResize(guiObj, MinMax, wClientWidth, wClientHeight) {
 
-
         this.title.GetPos(&tX, &tY, &tW, &tH)
         this.title.Move(, , wClientWidth - this.gui.MarginX * 2)
-        ; Console.Debug("wClientW:" wClientW " ,wMarginX:" wMarginX " `ttX:" tX " ,tW:" tW)
-        ; Console.Debug("wClientW:" wClientW * this.scale " ,wMarginX:" wMarginX * this.scale " `ttX:" tX * this.scale " ,tW:" tW * this.scale " (scale)")
     }
 
 
@@ -61,9 +59,9 @@ class UITips {
 
     ; 执行窗口置顶
     AlwaysOnTopHandle() {
-        ; Console.Debug(this.gui.Hwnd "`t" WinExist('ahk_id' this.gui.Hwnd))
-        if (WinExist('ahk_id' this.gui.Hwnd)) {
-            WinSetAlwaysOnTop(true, 'ahk_id' this.gui.Hwnd)
+        ; Console.Debug(this.gui.Hwnd "`t" WinExist("ahk_id" this.gui.Hwnd))
+        if (WinExist("ahk_id" this.gui.Hwnd)) {
+            WinSetAlwaysOnTop(true, "ahk_id" this.gui.Hwnd)
         }
     }
 
@@ -73,14 +71,14 @@ class UITips {
             return
         this.isShow := true
 
-        this.gui.Show('NoActivate AutoSize')
+        this.gui.Show("NoActivate")
 
         ; 轮询设置置顶
         SetTimer(this.CallAlwaysOnTopHandle, 100)
 
         ; 设置窗口样式
         hwnd := this.gui.Hwnd
-        WinSetTransparent(this.transparent, 'ahk_id' hwnd)
+        WinSetTransparent(this.transparent, "ahk_id" hwnd)
     }
 
     ; 隐藏窗口
@@ -91,7 +89,7 @@ class UITips {
     }
 
     OnClose(callback) {
-        this.gui.OnEvent('Close', callback)
+        this.gui.OnEvent("Close", callback)
     }
 
     __Delete() {

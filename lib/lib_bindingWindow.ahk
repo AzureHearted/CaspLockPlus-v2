@@ -1,8 +1,13 @@
 ﻿#Requires AutoHotkey v2.0
+#Include <Console>
+#Include <lib_functions>
 
 class BindingWindow {
 
-    ;! 绑定窗口
+    /**
+     * ! 绑定窗口
+     * @param {String} key 按键
+     */
     static Binding(key) {
         ; 获取当前窗口信息
         nId := WinExist('A')
@@ -25,10 +30,10 @@ class BindingWindow {
         if (section && ((nId == iniKeyId && nTitle == iniKeyTitle) && (RegExMatch(nClass, '^' mrClass[]
         ) &&
             (nExe == iniKeyExe)))) {
-            this.ShowToolTips('取消绑定')
+            ShowToolTips('取消绑定')
             IniDelete('winsInfosRecorder.ini', key)
         } else {
-            this.ShowToolTips('覆盖绑定')
+            ShowToolTips('覆盖绑定')
             IniWrite(nId, 'winsInfosRecorder.ini', key, 'ahk_id')	        ;写入id到ini
             IniWrite(nTitle, 'winsInfosRecorder.ini', key, 'ahk_title')	        ;写入title到ini
             IniWrite(nClass, 'winsInfosRecorder.ini', key, 'ahk_class')  ;写入class到ini
@@ -37,12 +42,15 @@ class BindingWindow {
         }
     }
 
-    ;! 激活窗口
+    /**
+     * ! 激活窗口
+     * @param {String} key 按键
+     */
     static Active(key) {
         ; 查询当前key是否绑定了窗口
         section := IniRead('winsInfosRecorder.ini', key, , '')
         if (!section) {
-            this.ShowToolTips('该按键尚未绑定窗口')
+            ShowToolTips('该按键尚未绑定窗口')
             return
         }
 
@@ -78,7 +86,7 @@ class BindingWindow {
                         Run(tPath)
                     } catch Error as e {
                         Console.Debug(e.Message)
-                        this.ShowToolTips(e.Message)
+                        ShowToolTips(e.Message)
                     }
                 } else {
                     ; this.showToolTips('进程不存在')
@@ -98,14 +106,5 @@ class BindingWindow {
             WinActivate('ahk_id' tId)
         }
 
-    }
-    /**
-     * * 显示ToolTips消息
-     * @param msg 消息内容
-     * @param duration 持续时间
-     */
-    static ShowToolTips(msg, duration := 1000) {
-        ToolTip(msg)
-        SetTimer(() => ToolTip(), duration)
     }
 }
