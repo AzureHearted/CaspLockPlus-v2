@@ -100,12 +100,15 @@ class BatchReName {
         this.listPreset := this.gui.AddDropDownList("x+m ys")
         this.listPreset.OnEvent("Change", (ctrlObj, info) => this.OnPresetChange(ctrlObj, info))
 
-        this.btnSavePreset := this.gui.AddButton("x+m ys r0.75 +Disabled", "保存预设")
+        this.btnSavePreset := this.gui.AddButton("x+m ys r0.75 +Disabled", "保存")
         this.btnSavePreset.OnEvent("Click", (*) => this.SavePreset())
-        ; this.btnSavePreset.OnEvent("ContextMenu",(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y)=>this.OnBtnSavePresetContextMenu())
-        this.btnDeletePreset := this.gui.AddButton("x+m hp +Disabled", "删除预设")
+        this.btnSaveAsPreset := this.gui.AddButton("x+m hp +Disabled", "另存为")
+        this.btnSaveAsPreset.OnEvent("Click", (*) => this.SaveAsPreset())
+        this.btnReNamePreset := this.gui.AddButton("x+m hp  +Disabled", "重命名")
+        this.btnReNamePreset.OnEvent("Click", (*) => this.ReNamePreset())
+        this.btnDeletePreset := this.gui.AddButton("x+m hp +Disabled", "删除")
         this.btnDeletePreset.OnEvent("Click", (*) => this.DeletePreset())
-        this.btnManagePreset := this.gui.AddButton("x+m hp", "预设重命名")
+
 
         ;清空规则按钮
         this.btnClearRule := this.gui.AddButton("x+m ys r0.75 vClearRule", "清空规则")
@@ -217,7 +220,7 @@ class BatchReName {
         Hotkey("^s", HotKeyCtrlSCallback)
         HotKeyCtrlSCallback(HotkeyName) {
             if (this.rules.Length) {
-                this.SavePreset()
+                this.SaveAsPreset()
             }
         }
 
@@ -317,6 +320,7 @@ class BatchReName {
         this.Update(true)
         ; 取消对 `保存规则` 按钮的禁用
         this.btnSavePreset.Opt("-Disabled")
+        ; this.btnSaveAsPreset.Opt("-Disabled")
     }
 
     /**
@@ -352,8 +356,9 @@ class BatchReName {
 
         ; 判断规则列表是否为空
         if (!this.rules.Length) {
-            ; 添加对 `保存规则` 按钮的禁用
+            ; 禁用 “保存” “另存为” 按钮
             this.btnSavePreset.Opt("+Disabled")
+            this.btnSaveAsPreset.Opt("+Disabled")
         }
     }
 
@@ -471,24 +476,72 @@ class BatchReName {
         this.listRuleView.Delete()
         this.Update(true)
 
-        ; 添加对 `保存规则` 按钮的禁用
+        ; 禁用 “保存” “另存为” 按钮
         this.btnSavePreset.Opt("+Disabled")
+        this.btnSaveAsPreset.Opt("+Disabled")
+    }
+    ;* 保存当前预设
+
+    SavePreset() {
+        ; 如果当前没有选择规则，则直接调用另存命令
+        if (!this.nowPresetName) {
+            this.SaveAsPreset()
+            return
+        }
+        ; 若当前已经选择过预设则进行如下操作
+        ; 至少包含一条规则才可保存
+        if (this.rules.Length < 1) {
+            ShowToolTips("预设中至少包含一条规则")
+            return
+        }
+        ; 到这里先禁用按钮防止重复触发
+        this.btnSavePreset.Opt("+Disabled")
+
+        ; 预收集预设信息
+        preset := {
+            name: this.nowPresetName,
+            rules: this.rules,
+            filters: {
+                file: {
+                    enable: this.checkFilterFile.Value,
+                    regex: this.editorFilterFile.Value
+                },
+                folder: {
+                    enable: this.checkFilterFolder.Value,
+                    regex: this.editorFilterFolder.Value
+                }
+            }
+        }
+        ; 拿到预设文件路径
+        path := this.nowPresetPath
+        ; 写入预设到json文件
+        writeCount := JSON.DumpFile(preset, path, true, "UTF-8")
+
+        ShowToolTips("规则 “" preset.name "” 保存成功！")
+        ; 防止频繁操作
+        Sleep(300)
+        this.btnSavePreset.Opt("-Disabled")
     }
 
-    ;* 保存预设
-    SavePreset() {
-        ; this.gui.GetPos(&xGui, &yGui, &wGui, &hGui)
-        this.gui.GetClientPos(&xGui, &yGui, &wGui, &hGui)
-        ; WinGetClientPos(&xGui, &yGui, &wGui, &hGui, "ahk_id" this.gui.Hwnd)
-        ; WinGetPos(&xGui, &yGui, &wGui, &hGui, "ahk_id" this.gui.Hwnd)
+    ;* 另存为预设
+    SaveAsPreset() {
+        ; 至少包含一条规则才可保存
+        if (this.rules.Length < 1) {
+            ShowToolTips("预设中至少包含一条规则")
+            return
+        }
 
+        this.gui.GetClientPos(&xGui, &yGui, &wGui, &hGui)
+        this.gui.Opt("+OwnDialogs")
         inputBoxObj := InputBox("请输入预设名称：", "创建预设", "w150  h70  x" xGui + (wGui - 150 * this.DPIScale) / 2 " y" yGui, "新预设")
+        this.gui.Opt("-OwnDialogs")
+
         if (inputBoxObj.Result == "Cancel") {
             return
         }
         ; 预设信息
         preset := {
-            name: inputBoxObj.Value,
+            name: StringUtils.SanitizePath(inputBoxObj.Value),
             rules: this.rules,
             filters: {
                 file: {
@@ -504,7 +557,9 @@ class BatchReName {
 
         writeTo := this.presetDir "\" preset.name ".json"
         if (FileExist(writeTo)) {
+            this.gui.Opt("+OwnDialogs")
             op := MsgBox("预设 “" preset.name "” 已存在，确认覆盖？", "提示", "YesNo Owner" this.gui.Hwnd)
+            this.gui.Opt("-OwnDialogs")
             if (op == "No") {
                 return
             }
@@ -512,31 +567,44 @@ class BatchReName {
 
         ; Console.Debug("预设准备写入：" writeTo)
         SplitPath(writeTo, , &dir)
-        ; 如果目录不存在先创建目录
+        ; 在先创建目录（防止目录不存）
         if (!DirExist(dir))
             DirCreate(dir)
         ; 写入预设到json文件
         writeCount := JSON.DumpFile(preset, writeTo, true, "UTF-8")
         ; Console.Debug("保存成功，共写入：" writeCount "个字符")
+
         ; 重新加载预设名称列表
-        this.ReLoadPresetNameList()
+        this.ReloadPresetNameList()
         ; 设定刚创建预设为当前预设
         this.nowPresetName := preset.name
+
+        this.gui.Opt("-OwnDialogs")
     }
 
     ;* 加载预设名称列表
-    ReLoadPresetNameList() {
+    ReloadPresetNameList() {
         dir := this.presetDir
         list := []
+        ; 重载前先记录当前选择的预设名称
+        oldPresetName := this.nowPresetName
         loop files dir "\*.json", "F" {
             SplitPath(A_LoopFileFullPath, , , , &presetName)
             list.Push(presetName)
         }
         this.listPreset.Delete()
         this.listPreset.Add(list)
+
+        ; 重载结束后还原当前所选的预设名称 (如果不为空且存在的话)
+        if (oldPresetName && FileExist(this.presetDir "\" oldPresetName ".json")) {
+            this.listPreset.Choose(oldPresetName)
+        }
     }
 
-    /** @type {String} 当前预设名称 */
+    /**
+     * ? 当前预设名称 （动态属性）
+     * @type {String}  
+     */
     nowPresetName {
         get {
             ; 返回当前预设名
@@ -551,8 +619,10 @@ class BatchReName {
                 ; Console.Debug("预设路径:" path)
                 if (FileExist(path)) {
                     ; 加载预设
+
                     /** @type {Map} */
-                    jsonMap := JSON.LoadFile(path, "UTF-8") ;? `JSON.LoadFile` 和 `JSON..Parse` 解析出来的结果是一个 `Map` 对象
+                    jsonMap := JSON.LoadFile(path, "UTF-8")
+                    ;? `JSON.LoadFile` 和 `JSON..Parse` 解析出来的结果是一个 `Map` 对象
                     ; Console.Debug("加载预设 " Type(jsonMap), jsonMap)
 
                     ; 加载过滤器
@@ -575,17 +645,86 @@ class BatchReName {
                         this.AddRule(rule)
                     }
                     this.listPreset.Choose(Value)
-                    ; 成功加载预设后允许使用删除预设操作
+                    ; 成功加载预设后允许使用 另存为，重命名、删除 等按钮
                     this.btnDeletePreset.Opt("-Disabled")
+                    this.btnReNamePreset.Opt("-Disabled")
+                    this.btnSaveAsPreset.Opt("-Disabled")
                 }
             } else {
                 Console.Debug("预设加载失败：" Value)
                 ; 重新加载预设列表
-                this.ReLoadPresetNameList()
-                ; 失败则禁用删除预设按钮
+                this.ReloadPresetNameList()
+                ; 失败则禁用 另存为，重命名、删除 等按钮
                 this.btnDeletePreset.Opt("+Disabled")
+                this.btnReNamePreset.Opt("+Disabled")
+                this.btnSaveAsPreset.Opt("+Disabled")
             }
         }
+    }
+
+    /**
+     * ? 当前预设的预取文件路径（动态属性）
+     * @type {String}  
+     */
+    nowPresetPath {
+        get {
+            return this.presetDir "\" this.nowPresetName ".json"
+        }
+    }
+
+    ;* 重命名预设
+    ReNamePreset() {
+        ; 获取预设名称
+        oldName := this.nowPresetName
+        ; 获取预设下标
+        index := this.listPreset.Value
+
+        ; 如果索引意外的不存则也直接不再处理
+        if (!index) {
+            Console.Error(Error("意外错误：索引不存在"))
+            return
+        }
+
+        ; 获取预设路径
+        oldPath := this.nowPresetPath
+
+        this.gui.GetClientPos(&xGui, &yGui, &wGui, &hGui)
+
+        while (true) {
+            this.gui.Opt("+OwnDialogs")
+            inputBoxObj := InputBox("请输入预设的新名称：", "重命名预设", "w150  h70  x" xGui + (wGui - 150 * this.DPIScale) / 2 " y" yGui, oldName)
+            this.gui.Opt("-OwnDialogs")
+            if (inputBoxObj.Result == "Cancel") {
+                return
+            }
+
+            newName := StringUtils.SanitizePath(inputBoxObj.Value)
+
+            ; 如果新名称和旧名称相同旧无需修改
+            if (newName == oldName) {
+                ShowToolTips("新旧名称相同，无需修改。")
+                return
+            }
+
+            newPath := this.presetDir "\" newName ".json"
+
+            ; 判断新名称是否已经被占用
+            if (FileExist(newPath)) {
+                ; op := MsgBox("名称 “" newName "” 已被占用，请重新输入预设名", "提示", "OK Owner" this.gui.Hwnd)
+                ShowToolTips("名称 “" newName "” 已被占用，请重新输入预设名")
+                continue
+            }
+
+
+            ; 先修改文件名
+            FileMove(oldPath, newPath)
+            ; 然后重载列表
+            this.ReloadPresetNameList()
+            ; 指定当前规则为改名后的规则
+            this.nowPresetName := newName
+            return
+        }
+
     }
 
     /**
@@ -604,25 +743,25 @@ class BatchReName {
         presetName := this.nowPresetName
         ; 获取预设下标
         index := this.listPreset.Value
-
-        path := this.presetDir "\" presetName ".json"
+        ; 获取预设路径
+        path := this.nowPresetPath
         if (FileExist(path)) {
             op := MsgBox("确认删除预设 “" presetName "” ", "提示", "YesNo Owner" this.gui.Hwnd)
             ; Console.Debug("用户确认删除：" op)
             if (op == "No")
                 return
 
-            ; 先去除预设列表里面的项目
-            if (index) {
-                this.nowPresetName := ""
-                this.listPreset.Delete(index)
-            }
-
-            ; 规则文件丢入回收站
+            ; 将预设文件丢入回收站
             FileRecycle(path)
-        } else {
-            this.btnDeletePreset.Opt("+Disabled")
+            ; 重载预设列表 (此时若删除成功，列表中预设名称会被置为空)
+            this.ReloadPresetNameList()
         }
+
+        ; 无论是删除成功都要禁用 另存为、重命名、删除按钮，因为此时当前预设名称为空
+        this.btnSaveAsPreset.Opt("+Disabled")
+        this.btnReNamePreset.Opt("+Disabled")
+        this.btnDeletePreset.Opt("+Disabled")
+
     }
 
     ;*更新规则ListView
@@ -850,6 +989,7 @@ class BatchReName {
 
         ;* 最后刷新ListView 同时重新计算重命名结果
         this.Update(true)
+        this.UpdateFileListView(true)
     }
 
     /**
@@ -909,19 +1049,25 @@ class BatchReName {
             , "Int")
     }
 
-    ;*更新文件ListView
-    UpdateFileListView() {
+    /**
+     * 更新文件ListView
+     * @param {Integer} sortByPath 是否按照路径列排序
+     */
+    UpdateFileListView(sortByPath := false) {
         lv := this.listFileView
-        lv.ModifyCol(1, 'AutoHdr')
-        lv.ModifyCol(2, 'AutoHdr')
-        lv.ModifyCol(3, 'AutoHdr')
-        lv.ModifyCol(4, 'AutoHdr')
+        lv.ModifyCol(1, "AutoHdr")
+        lv.ModifyCol(2, "AutoHdr")
+        lv.ModifyCol(3, "AutoHdr")
+        lv.ModifyCol(4, "AutoHdr")
 
         for (indexCol in Array(2, 3)) {
             ; 限制2、3列自动宽度不超过180
             if (this.GetListViewColumnWidth(lv, indexCol) > 180) {
                 lv.ModifyCol(indexCol, 180)
             }
+        }
+        if (sortByPath) {
+            lv.ModifyCol(4, "Logical Sort")
         }
     }
 
@@ -1039,7 +1185,7 @@ class BatchReName {
     }
 
     /**
-     * 冲突检测
+     * * 冲突检测
      */
     CheckConflict() {
         isConflict := false
@@ -1053,6 +1199,12 @@ class BatchReName {
             ; 跳过未修改的文件
             if (file.Path == file.NewPath) {
                 this.listFileView.Modify(A_Index, , "✔")
+                continue
+            }
+
+            ; 如果待修改文件路径不存则跳过
+            if (!file.PathExist) {
+                this.listFileView.Modify(A_Index, , "❓")
                 continue
             }
 
@@ -1073,11 +1225,10 @@ class BatchReName {
             }
 
             ; 判断文件是否存在
-            ;* file.NewAttribute 不为空则说文件存在即冲突
-
-            this.listFileView.Modify(A_Index, , file.NewAttribute ? "❗" : "✔")
+            ; * file.NewPathExist == true 则说文件存在即冲突
+            this.listFileView.Modify(A_Index, , file.NewPathExist ? "❗" : "✔")
             ; 标记判断
-            isConflict := file.NewAttribute
+            isConflict := file.NewPathExist
 
         }
         if (isConflict) {
@@ -1097,9 +1248,15 @@ class BatchReName {
             return
         }
         successCount := 0
+        notExistCount := 0
         for (index, fileItem in this.files) {
-            ;* 跳过冲突项 NewAttribute 不为空就说明冲突
-            if (fileItem.NewAttribute) {
+            ;* 跳过冲突项 NewPathExist==true 说明冲突
+            if (fileItem.NewPathExist) {
+                continue
+            }
+            ;* 跳过路径不存在的项
+            if (!fileItem.PathExist) {
+                notExistCount++
                 continue
             }
 
@@ -1134,13 +1291,17 @@ class BatchReName {
         ; 完成后刷新两视图
         this.UpdateFileListView()
 
-        MsgBox("✔重命名成功！（成功重命名 " successCount "/" this.files.Length " 项）", "提示", "Owner" this.gui.Hwnd)
+        if (notExistCount) {
+            MsgBox("✔重命名成功！（成功重命名 " successCount "/" this.files.Length " 项，未找到路径 " notExistCount " 项目）", "提示", "Owner" this.gui.Hwnd)
+        } else {
+            MsgBox("✔重命名成功！（成功重命名 " successCount "/" this.files.Length " 项）", "提示", "Owner" this.gui.Hwnd)
+        }
     }
 
     ; 显示窗口
     Show() {
         ; 加载预设列表
-        this.ReLoadPresetNameList()
+        this.ReloadPresetNameList()
         ; 获取文件
         renameFiles := this.GetFiles()
         ; Console.Debug(renameFiles)
@@ -1172,8 +1333,7 @@ class BatchReName {
                 this.files.Push(file)
                 this.AddFileToListView(file)
             }
-            ; 加载文件列表
-            ; this.LoadFile()
+
             ;* 刷新ListView 同时重算重命名结果
             this.Update(true)
             ;* 按照路径逻辑排序(首次排序)
@@ -1258,7 +1418,7 @@ class UIRuleEdit {
         } else {
             this.parent := WinActive("A")
         }
-        this.gui := Gui("-DPIScale", "规则")
+        this.gui := Gui("-DPIScale -MinimizeBox -MaximizeBox", "规则")
         this.gui.SetFont('q5 s10', "Microsoft YaHei UI")
         this.gui.MarginX := this.gapX
         this.gui.MarginY := this.gapY
@@ -1475,7 +1635,6 @@ class UIRuleEdit {
         ;* 添加窗口事件
         this.gui.OnEvent('Size', (guiObj, MinMax, wWidth, wHeight) => this.OnWindowResize(guiObj, MinMax, wWidth, wHeight))
         this.gui.OnEvent("Close", (*) => this.Close())
-
     }
 
     /**
@@ -1490,35 +1649,9 @@ class UIRuleEdit {
         if (MinMax == -1)
             return
 
-        ; Console.Debug(wWidth, wHeight)
-
         this.gui.GetClientPos(&wClientX, &wClientY, &wClientW, &wClientH)
         wMarginX := this.gui.MarginX
         wMarginY := this.gui.MarginY
-
-        ;* 调整"插入"Tab下的第二列
-        ; {
-        ;     gap := 4
-        ;     this.Ctl_Insert_Position_Index.GetPos(&xPI, &yPI, &wPI, &hPI)
-        ;     this.Ctl_Insert_Position_Before.GetPos(&xPB, &yPB, &wPB, &hPB)
-        ;     this.Ctl_Insert_Position_After.GetPos(&xPA, &yPA, &wPA, &hPA)
-        ;     this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(, , &wPIAE, &hPIAE)
-        ;     xUnify := xPB + wPB + gap
-        ;     this.Ctl_Insert_Position_Index_AnchorIndex_Edit.Move(xUnify, yPI + (hPI - hPIAE) / 2)
-        ;     this.Ctl_Insert_Position_Index_AnchorIndex_Edit.GetPos(&xPIAE, &yPIAE, &wPIAE, &hPIAE)
-        ;     this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(, , &wPIA, &hPIA)
-        ;     this.Ctl_Insert_Position_Index_AnchorIndex.Move(xPIAE + wPIAE + gap, yPIAE)
-
-        ;     this.Ctl_Insert_Position_Index_ReverseIndex.GetPos(, , , &hPIR)
-        ;     this.Ctl_Insert_Position_Index_AnchorIndex.GetPos(&xPIA, &yPIA, &wPIA, &hPIA)
-        ;     this.Ctl_Insert_Position_Index_ReverseIndex.Move(xPIA + wPIA + gap, yPIA + (hPIA - hPIR) / 2)
-
-        ;     this.Ctl_Insert_Position_Before_AnchorText.GetPos(, , , &hPBA)
-        ;     this.Ctl_Insert_Position_Before_AnchorText.Move(xUnify, yPB + (hPB - hPBA) / 2)
-
-        ;     this.Ctl_Insert_Position_After_AnchorText.GetPos(, , , &hPAA)
-        ;     this.Ctl_Insert_Position_After_AnchorText.Move(xUnify, yPA + (hPA - hPAA) / 2)
-        ; }
 
         ;* 调整底部按钮
         this.btnCancel.GetPos(&bclX, &bclY, &bclW, &bclH)
@@ -2413,6 +2546,16 @@ class ReNameFile {
             }
         }
 
+        ; 判断Path是否存在
+        this.DefineProp("PathExist", { Get: GetPathExist })
+        GetPathExist(*) {
+            if (this.IsDirectory) {
+                return DirExist(this.Path)
+            } else {
+                return FileExist(this.Path)
+            }
+        }
+
         ; 是否是目录
         this.DefineProp("IsDirectory", { Get: GetIsDirectory })
         GetIsDirectory(*) {
@@ -2447,6 +2590,16 @@ class ReNameFile {
         this.DefineProp("NewPath", { Get: GetNewPath })
         GetNewPath(*) {
             return this.Dir "\" this.NewName
+        }
+
+        ; 判断NewPath是否存在
+        this.DefineProp("NewPathExist", { Get: GetNewPathExist })
+        GetNewPathExist(*) {
+            if (this.IsDirectory) {
+                return DirExist(this.NewPath)
+            } else {
+                return FileExist(this.NewPath)
+            }
         }
 
         ; 新属性（用于判断是否冲突）

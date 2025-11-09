@@ -354,4 +354,29 @@ class StringUtils {
     ; --- 4. 替换 ---
     return RegExReplace(original, regexStr, replaceTo)
   }
+
+
+  /**
+   * * 使路径字符串合法化（去除或替换非法字符）
+   * @param {String} path 原始路径字符串
+   * @param {String} replacement 用于替代非法字符的字符串（默认是 "_"）
+   * @return {String} 合法化后的路径字符串
+   */
+  static SanitizePath(path, replacement := "_") {
+    ; Windows 文件/文件夹名称中不允许的字符：
+    ; \ / : * ? " < > | 以及控制字符 (0x00–0x1F)
+    invalidPattern := "[\\\/:\*\?\" "<>\|\x00-\x1F]"
+
+    ; 替换非法字符
+    clean := RegExReplace(path, invalidPattern, replacement)
+
+    ; 去掉结尾的点和空格（Windows 不允许文件名以它们结尾）
+    clean := RegExReplace(clean, "[\. ]+$", "")
+
+    ; 如果清理后为空字符串，则返回 "_"
+    if (clean = "")
+      clean := "_"
+
+    return clean
+  }
 }

@@ -1,5 +1,4 @@
 #Requires AutoHotkey v2.0
-#Include <GuiEnhancerKit>
 
 ;! 提示窗口
 class UITips {
@@ -15,7 +14,7 @@ class UITips {
 
     __New(title := "提示") {
 
-        this.gui := GuiExt("+AlwaysOnTop +ToolWindow -DPIScale -Caption -DPIScale")
+        this.gui := Gui("+AlwaysOnTop +ToolWindow -DPIScale -Caption -DPIScale")
         this.gui.SetFont("q5 s14", "Microsoft YaHei UI")
         ; 基础样式
         this.gui.MarginX := 10
@@ -24,7 +23,7 @@ class UITips {
         ; 标题
         ; this.title := this.gui.AddText("r1.4 Center", title)
         this.title := this.gui.AddText("BackgroundC9f01e9 cwhite r1.6 Center", title)
-        this.title.SetRounded()
+        ; this.title.SetRounded()
         this.title.SetFont("q5 s20", "Microsoft YaHei UI")
 
         ; 事件绑定
