@@ -153,3 +153,25 @@ IsAlwaysOnTop(hwnd := 0) {
         return false
     }
 }
+
+/**
+ * 获取 Windows 版本函数
+ * @returns {{Major:Integer,Minor:Integer,Build:Integer,Full:String}} 
+ * - Major 主版本号（例如：Windows 10 为 10）
+ * - Minor 次版本号
+ * - Build 内部构建号
+ * - Full 完整版本号
+ */
+GetWindowsVersion() {
+    ; 获取系统版本号的经典方法，兼容所有 Windows。
+    ver := DllCall("GetVersion", "UInt")
+    major := ver & 0xFF
+    minor := (ver >> 8) & 0xFF
+    build := (ver >> 16) & 0xFFFF
+    return {
+        Major: major,
+        Minor: minor,
+        Build: build,
+        Full: major "." minor "." build
+    }
+}

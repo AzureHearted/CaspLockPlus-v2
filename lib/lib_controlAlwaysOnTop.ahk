@@ -8,9 +8,9 @@ class AlwaysOnTopControl {
   picUrl := A_Temp '\CapsLockPlus v2\cancelAlwaysOnTop.png'
   ; 偏移量
   scale := A_ScreenDPI / 96 ; 获取缩放比例
-  size := 20 * this.scale
-  offsetX := -180 * this.scale
-  offsetY := 4 * this.scale
+  size := 24  ;图标尺寸
+  offsetX := -180
+  offsetY := 6
 
   removeFlag := false
 
@@ -42,9 +42,9 @@ class AlwaysOnTopControl {
   }
 
   HandleClick(*) {
+    SetTimer(this.timerFun, 0)
     WinSetAlwaysOnTop(false, 'ahk_id' this.tid)
     Console.Debug('取消窗口置顶')
-    SetTimer(this.timerFun, 0)
     this.Remove()
     return
   }
@@ -56,23 +56,24 @@ class AlwaysOnTopControl {
       this.Remove()
       Console.Debug('窗口被关闭了')
       SetTimer(this.timerFun, 0)
-      return
     }
 
     this.GetParentPos(&px, &py, &pw, &ph)
     x := px + pw + this.offsetX
     y := py + this.offsetY
-    this.gui.Move(x, y)
+    try this.gui.Move(x, y)
   }
 
   Remove() {
     SetTimer(this.timerFun, 0)
     this.pic.OnEvent('Click', (*) => this.HandleClick(), 0)
-    this.gui.Destroy()
     this.removeFlag := true
+    this.__Delete()
   }
 
   __Delete() {
+    this.gui.Destroy()
+    this.gui := ""
     Console.Debug('释放AlwaysOnTopControl')
   }
 }

@@ -13,9 +13,20 @@ JSON.EscapeUnicode := false
 ; StartAlone()
 
 StartAlone() {
+    SysVer := GetWindowsVersion()
+
     TraySetIcon("../res/ReNamer.ico")
     ; MsgBox("模式：单独启动")
     Console.Debug("模式：单独启动")
+
+    if (SysVer.Major >= 10) {
+        ;! 忽略DPI缩放(必须在创建GUI之前调用)
+        DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -5)
+    } else {
+        ;! 忽略DPI缩放(必须在创建GUI之前调用)
+        DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -1)
+    }
+
     ReNameUI := BatchReName()
     ReNameUI.isCloseGuiToExitApp := true
     ReNameUI.Show()
@@ -68,9 +79,6 @@ class BatchReName {
         ; 设置预设目录
         if (IsSet(presetDir))
             this.presetDir := presetDir
-
-        ;! 忽略DPI缩放(必须在创建GUI之前调用)
-        DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -1)
 
         this.gui := Gui('-DPIScale +Resize +MinSize700x400 ', '批量重命名')
 

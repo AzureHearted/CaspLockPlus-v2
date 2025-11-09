@@ -30,9 +30,15 @@ try {
 #Include ../gui/ui_webview.ahk
 #Include ../tools/ReNamer.ahk
 
-
 ;! 忽略DPI缩放(必须在创建GUI之前调用)
-DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -1)
+if (GetWindowsVersion().Major >= 10) {
+    ; Windows 10+ 的上效果最佳
+    DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -5)
+} else {
+    ; Windows 10 一下效果最佳
+    DllCall("User32\SetThreadDpiAwarenessContext", "UInt", -1)
+}
+
 
 ; A_MaxHotkeysPerInterval和A_HotkeyInterval变量控制热键激活的速率, 超过此速率将显示警告对话框.
 A_MaxHotkeysPerInterval := 500
