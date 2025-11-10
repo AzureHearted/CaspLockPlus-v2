@@ -14,17 +14,18 @@ class UITips {
 
     __New(title := "提示") {
 
-        this.gui := Gui("+AlwaysOnTop +ToolWindow -DPIScale -Caption -DPIScale")
-        this.gui.SetFont("q5 s14", "Microsoft YaHei UI")
+        this.gui := Gui("+AlwaysOnTop +ToolWindow -DPIScale -Caption")
+        ; this.gui.SetFont("q5 s14", "Microsoft YaHei UI")
+        this.gui.SetFont("q5", "Microsoft YaHei UI")
         ; 基础样式
         this.gui.MarginX := 10
         this.gui.MarginY := 10
 
         ; 标题
         ; this.title := this.gui.AddText("r1.4 Center", title)
-        this.title := this.gui.AddText("BackgroundC9f01e9 cwhite r1.6 Center", title)
+        this.title := this.gui.AddText("BackgroundC9f01e9 cwhite r2 Center", title)
         ; this.title.SetRounded()
-        this.title.SetFont("q5 s20", "Microsoft YaHei UI")
+        this.title.SetFont("s16", "Microsoft YaHei UI")
 
         ; 事件绑定
         this.gui.OnEvent("Size", (guiObj, MinMax, wClientWidth, wClientHeight) => this.OnWindowResize(guiObj, MinMax, wClientWidth, wClientHeight))
@@ -65,12 +66,12 @@ class UITips {
     }
 
     ; 显示窗口
-    Show() {
+    Show(width?, height?) {
         if (this.isShow) ;* 防止重复显示
             return
         this.isShow := true
 
-        this.gui.Show("NoActivate")
+        this.gui.Show("NoActivate " (IsSet(width) ? "w" width : "") " " (IsSet(height) ? "h" height : ""))
 
         ; 轮询设置置顶
         SetTimer(this.CallAlwaysOnTopHandle, 100)

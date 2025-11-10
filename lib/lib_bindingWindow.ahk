@@ -61,14 +61,15 @@ class BindingWindow {
         tExe := IniRead('winsInfosRecorder.ini', key, 'ahk_exe', '')
         tPath := IniRead('winsInfosRecorder.ini', key, 'path', '')
 
+        realId := WinExist('ahk_id ' tId ' ' tTitle)
         ;? 如果target_ahk_id不存在
-        if (!WinExist('ahk_id ' tId ' ' tTitle)) {
+        if (!realId) {
             ; 如果 ahk_id 没有找到窗口则尝试通过 ahk_class 和 ahk_exe 找到窗口
             SetTitleMatchMode('RegEx')
             ; 防错步骤(临时处理方案)
             RegExMatch(tClass, '^[^\[\]\:]+', &mClass)
             ; TrayTip('mClass[] = ' mClass[], '调试', 'IconI')
-            Console.Debug('mClass[] = ' mClass[])
+            ; Console.Debug('mClass[] = ' mClass[])
             tempId := WinExist('ahk_class ' '^' mClass[] ' ahk_exe ' tExe)
 
             if (tempId) {
@@ -96,14 +97,21 @@ class BindingWindow {
             }
         }
 
+        ;如果找到窗口就更新ini的信息
+        try {
+            title := WinGetTitle('ahk_id' realId)
+            ; Console.Debug(title)
+            IniWrite(title, 'winsInfosRecorder.ini', key, 'ahk_title')   ;更新title到ini
+        }
+
         ; this.showToolTips('成功找到进程')
         ; 如果目标窗口存在则直接尝试激活/最小化窗口
-        if (WinActive('ahk_id' tId)) {
+        if (WinActive('ahk_id' realId)) {
             ; 如果窗口已经被激活了，则进行最小化
-            WinMinimize('ahk_id' tId)
+            WinMinimize('ahk_id' realId)
         } else {
             ; 否则进行窗口激活
-            WinActivate('ahk_id' tId)
+            WinActivate('ahk_id' realId)
         }
 
     }
