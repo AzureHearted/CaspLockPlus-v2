@@ -102,16 +102,16 @@ class BindingWindow {
             title := WinGetTitle('ahk_id' realId)
             ; Console.Debug(title)
             IniWrite(title, 'winsInfosRecorder.ini', key, 'ahk_title')   ;更新title到ini
-        }
 
-        ; this.showToolTips('成功找到进程')
-        ; 如果目标窗口存在则直接尝试激活/最小化窗口
-        if (WinActive('ahk_id' realId)) {
-            ; 如果窗口已经被激活了，则进行最小化
-            WinMinimize('ahk_id' realId)
-        } else {
-            ; 否则进行窗口激活
-            WinActivate('ahk_id' realId)
+            ; this.showToolTips('成功找到进程')
+            ; 如果目标窗口存在则直接尝试激活/最小化窗口
+            if (WinActive('ahk_id' realId)) {
+                ; 如果窗口已经被激活了，则进行最小化
+                WinMinimize('ahk_id' realId)
+            } else {
+                ; 否则进行窗口激活
+                WinActivate('ahk_id' realId)
+            }
         }
 
     }
