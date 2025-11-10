@@ -223,7 +223,7 @@ class StringUtils {
    * * @param {String} original - 原始字符串
    * @returns {String} - 返回修改后的字符串
    */
-  static RemoveZeroPaddingString(original) {
+  static RemoveZeroPadding(original) {
 
     ; --- 步骤 1: 移除所有非零数字前的冗余零 ---
     ; Pattern: 匹配一个或多个零 (0+)，前提是后面跟着一个数字 (>0 的数字序列)

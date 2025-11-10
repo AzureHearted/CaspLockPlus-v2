@@ -4,7 +4,7 @@
 #Include ../lib/Array.ahk
 #Include ../lib/StringUtils.ahk
 #Include ../lib/lib_functions.ahk
-
+#Include ../lib/LV_colors.ahk
 
 ; 防止中文被转义
 JSON.EscapeUnicode := false
@@ -124,14 +124,17 @@ class BatchReName {
 
         ;* 创建规则ListView
         defRuleColumns := ["#", "规则", "说明"]
-        this.listRuleView := this.gui.AddListView("x" this.gapX " y+m r8 NoSortHdr Checked Grid Section", defRuleColumns)
+        this.lvRule := this.gui.AddListView("x" this.gapX " y+m r8 NoSortHdr Checked Grid Section", defRuleColumns)
+        this.lvRule.SetFont("q5 s9")
+        this.lvRuleColor := LV_Colors(this.lvRule.Hwnd, true)
+
 
         ;* 中部按钮
         this.btnApply := this.gui.AddButton("y+" this.gapY " r0.75 +Disabled", "应用")
         this.btnApply.OnEvent("Click", (*) => this.ReName())
 
         this.btnPreview := this.gui.AddButton("x+m yp hp", "预览")
-        this.btnPreview.OnEvent("Click", (*) => this.Update(true))
+        this.btnPreview.OnEvent("Click", (*) => this.UpdateAllListView(true))
 
         this.textFilter := this.gui.AddText("x+m yp" 3 " hp", "过滤器：")
         this.checkFilterFile := this.gui.AddCheckbox("x+m yp-" 3 " hp", "文件")
@@ -158,7 +161,9 @@ class BatchReName {
 
         ;* 创建文件ListView
         defFileColumns := ["状态", "名称", "新名称", "路径"]
-        this.listFileView := this.gui.AddListView("r15 Grid xs Checked LV0x4000", defFileColumns)
+        this.lvFile := this.gui.AddListView("r15 Grid xs Checked LV0x4000", defFileColumns)
+        this.lvFile.SetFont("q5 s9")
+        this.lvFileColor := LV_Colors(this.lvFile.Hwnd, true)
 
 
         ;* 状态栏
@@ -174,15 +179,16 @@ class BatchReName {
         ; -------------------------
 
         ; 绑定ListView事件
-        this.listRuleView.OnEvent("ItemCheck", (listObj, index, isChecked) => this.OnListRuleViewItemCheck(index, isChecked))
-        this.listRuleView.OnEvent("DoubleClick", (listObj, index) => this.OnListRuleViewDoubleClick(index))
+        this.lvRule.OnEvent("ItemCheck", (listObj, index, isChecked) => this.OnListRuleViewItemCheck(index, isChecked))
+        this.lvRule.OnEvent("DoubleClick", (listObj, index) => this.OnListRuleViewDoubleClick(index))
 
-        this.listFileView.OnEvent("ItemCheck", (listObj, index, isChecked) => this.OnListFileViewItemCheck(index, isChecked))
-        this.listFileView.OnEvent("ColClick", (listObj, colIndex) => this.OnListFileViewColClick(colIndex))
+        this.lvFile.OnEvent("ItemCheck", (listObj, index, isChecked) => this.OnListFileViewItemCheck(index, isChecked))
+        this.lvFile.OnEvent("ColClick", (listObj, colIndex) => this.OnListFileViewColClick(colIndex))
 
         ; 绑定窗口事件
         this.gui.OnEvent('Size', (guiObj, MinMax, Width, Height) => this.OnWindowResize(guiObj, MinMax, Width, Height))
         this.gui.OnEvent("Close", (*) => this.Close())
+        this.gui.OnEvent("Escape", (*) => this.Close())
 
         ;* 注册窗口热键
         HotIfWinActive("ahk_id " this.gui.Hwnd)
@@ -193,18 +199,18 @@ class BatchReName {
             ; 获取焦点控件的句柄
             hwnd := ControlGetFocus()
             ; Console.Debug("全选列表", hwnd, this.listFileView.Hwnd)
-            if (hwnd == this.listRuleView.Hwnd) {
+            if (hwnd == this.lvRule.Hwnd) {
                 ; 全选规则列表
                 ; Console.Debug("全选规则列表")
-                loop this.listRuleView.GetCount() {
-                    this.listRuleView.Modify(A_Index, "+Select")
+                loop this.lvRule.GetCount() {
+                    this.lvRule.Modify(A_Index, "+Select")
                 }
             }
-            if (hwnd == this.listFileView.Hwnd) {
+            if (hwnd == this.lvFile.Hwnd) {
                 ; 全选文件列表
                 ; Console.Debug("全选文件列表")
-                loop this.listFileView.GetCount() {
-                    this.listFileView.Modify(A_Index, "+Select")
+                loop this.lvFile.GetCount() {
+                    this.lvFile.Modify(A_Index, "+Select")
                 }
             }
         }
@@ -214,11 +220,11 @@ class BatchReName {
         HotKeyDel(HotkeyName) {
             ; 获取焦点控件的句柄
             hwnd := ControlGetFocus()
-            if (hwnd == this.listRuleView.Hwnd) {
+            if (hwnd == this.lvRule.Hwnd) {
                 ; 移除选中的规则
                 this.RemoveSelectedRule()
             }
-            if (hwnd == this.listFileView.Hwnd) {
+            if (hwnd == this.lvFile.Hwnd) {
                 ; 移除选中的文件
                 this.RemoveSelectedFile()
             }
@@ -243,7 +249,7 @@ class BatchReName {
      * @param {Integer} Height 窗口高度
      */
     OnWindowResize(guiObj, MinMax, wWidth, wHeight) {
-        Critical "on"
+        ; Critical "on"
         ; 如果窗口被最小化 (-1)，则无需调整控件，直接返回
         if (MinMax == -1)
             return
@@ -279,11 +285,11 @@ class BatchReName {
         LFV_NewHeight := remainH - LRV_NewHeight
 
         ;* 调整listRuleView
-        this.listRuleView.GetPos(&xLRV, &yLRV, &wLRV, &hLRV)
-        this.listRuleView.Move(, yBtnAddRule + hBtnAddRule + wMarginY, wClientW - wMarginX * 2, LRV_NewHeight)
+        this.lvRule.GetPos(&xLRV, &yLRV, &wLRV, &hLRV)
+        this.lvRule.Move(, yBtnAddRule + hBtnAddRule + wMarginY, wClientW - wMarginX * 2, LRV_NewHeight)
 
         ;* 调整中间按钮
-        this.listRuleView.GetPos(&xLRV, &yLRV, &wLRV, &hLRV)
+        this.lvRule.GetPos(&xLRV, &yLRV, &wLRV, &hLRV)
         this.btnApply.GetPos(&xBtnApply, &yBtnApply, &wBtnApply, &hBtnApply)
 
         middleButtonY := yLRV + hLRV + wMarginY
@@ -302,11 +308,11 @@ class BatchReName {
 
         ;* 调整listFileView
         this.btnClearFiles.GetPos(&xBtnClearFiles, &yBtnClearFiles, &wBtnClearFiles, &hBtnClearFiles)
-        this.listFileView.GetPos(&xLFV, &yLFV, &wLFV, &hLFV)
-        this.listFileView.Move(, yBtnClearFiles + hBtnClearFiles + wMarginY, wClientW - wMarginX * 2, LFV_NewHeight)
+        this.lvFile.GetPos(&xLFV, &yLFV, &wLFV, &hLFV)
+        this.lvFile.Move(, yBtnClearFiles + hBtnClearFiles + wMarginY, wClientW - wMarginX * 2, LFV_NewHeight)
 
         ;* 底部按钮
-        this.listFileView.GetPos(&xLFV, &yLFV, &wLFV, &hLFV)
+        this.lvFile.GetPos(&xLFV, &yLFV, &wLFV, &hLFV)
 
         bottomButtonY := yLFV + hLFV + wMarginY
 
@@ -318,14 +324,22 @@ class BatchReName {
     /**
      * *添加规则
      * @param {RenameRule.InsertRule|RenameRule.ReplaceRule|RenameRule.RemoveRule|RenameRule.SerializeRule|RenameRule.FillRule|RenameRule.RegexRule|RenameRule.ExtensionRule|""} rule 
+     * @param {Integer} isChecked 是否勾选
      */
-    AddRule(rule) {
+    AddRule(rule, isChecked := true) {
         ; Console.Debug("新增规则：" rule.TypeName "," rule.Description)
         this.rules.Push(rule)
-        index := this.listRuleView.Add("", this.rules.Length, rule.TypeName, rule.Description)
-        this.listRuleView.Modify(index, "Check") ; 默认勾选
+        index := this.lvRule.Add("", this.rules.Length, rule.TypeName, rule.Description)
+        ; 勾选判断
+        if (isChecked) {
+            this.lvRule.Modify(index, "+Check")
+            this.lvRuleColor.Row(index, , 0x009900)
+        } else {
+            this.lvRule.Modify(index, "-Check")
+            this.lvRuleColor.Row(index, ,)
+        }
         ; 更新两个ListView
-        this.Update(true)
+        this.UpdateAllListView(true)
         ; 取消对 `保存规则` 按钮的禁用
         this.btnSavePreset.Opt("-Disabled")
         ; this.btnSaveAsPreset.Opt("-Disabled")
@@ -338,29 +352,29 @@ class BatchReName {
      */
     UpdateRule(rule, index) {
         this.rules[index] := rule
-        this.listRuleView.Modify(index, "Check", , rule.TypeName, rule.Description)
-        this.Update(true)
+        this.lvRule.Modify(index, "Check", , rule.TypeName, rule.Description)
+        this.UpdateAllListView(true)
     }
 
     ;* 移除所选规则
     RemoveSelectedRule(*) {
-        listIndex := this.GetListViewIndexList(this.listRuleView, , true)
+        listIndex := this.GetListViewIndexList(this.lvRule, , true)
         ; Console.Debug("获取到的所选项的索引：", listIndex)
 
         for (index in listIndex) {
             ; 先对rules进行调整
             this.rules.RemoveAt(index)
             ; 再对listRuleView进行调整
-            this.listRuleView.Delete(index)
+            this.lvRule.Delete(index)
         }
 
         ; 重新设置索引
-        loop this.listRuleView.GetCount() {
-            this.listRuleView.Modify(A_Index, , A_Index)
+        loop this.lvRule.GetCount() {
+            this.lvRule.Modify(A_Index, , A_Index)
         }
 
         ; 更新两个ListView
-        this.Update(true)
+        this.UpdateAllListView(true)
 
         ; 判断规则列表是否为空
         if (!this.rules.Length) {
@@ -372,8 +386,8 @@ class BatchReName {
 
     ;* 上移规则
     UpRule(*) {
-        listSelectedIndex := this.GetListViewIndexList(this.listRuleView,)
-        listCheckedIndex := this.GetListViewIndexList(this.listRuleView, "C")
+        listSelectedIndex := this.GetListViewIndexList(this.lvRule,)
+        listCheckedIndex := this.GetListViewIndexList(this.lvRule, "C")
         ; Console.Debug("获取到的所选项的索引：", listIndex)
 
         for (index in listSelectedIndex) {
@@ -387,30 +401,30 @@ class BatchReName {
             this.rules.InsertAt(newIndex, rule)
 
             ; 再对listRuleView进行调整
-            this.listRuleView.Delete(index)
+            this.lvRule.Delete(index)
             typeName := RuleTypeReverseMap.Get(rule.Type)
-            this.listRuleView.Insert(newIndex, , , rule.TypeName, rule.Description)
+            this.lvRule.Insert(newIndex, , , rule.TypeName, rule.Description)
 
             ; 保持选中状态
-            this.listRuleView.Modify(newIndex, "+Select")
+            this.lvRule.Modify(newIndex, "+Select")
             ; 判断是否有Checked状态
             if (listCheckedIndex.IndexOf(index)) {
-                this.listRuleView.Modify(newIndex, "+Check")
+                this.lvRule.Modify(newIndex, "+Check")
             }
         }
         ; 重新设置索引
-        loop this.listRuleView.GetCount() {
-            this.listRuleView.Modify(A_Index, , A_Index)
+        loop this.lvRule.GetCount() {
+            this.lvRule.Modify(A_Index, , A_Index)
         }
 
         ; 更新两个ListView
-        this.Update(true)
+        this.UpdateAllListView(true)
     }
 
     ;* 下移规则
     DownRule(*) {
-        listIndex := this.GetListViewIndexList(this.listRuleView, , true)
-        listCheckedIndex := this.GetListViewIndexList(this.listRuleView, "C")
+        listIndex := this.GetListViewIndexList(this.lvRule, , true)
+        listCheckedIndex := this.GetListViewIndexList(this.lvRule, "C")
         ; Console.Debug("获取到的所选项的索引：", listIndex)
 
         for (index in listIndex) {
@@ -424,24 +438,24 @@ class BatchReName {
             this.rules.InsertAt(newIndex, rule)
 
             ; 再对listRuleView进行调整
-            this.listRuleView.Delete(index)
+            this.lvRule.Delete(index)
             typeName := RuleTypeReverseMap.Get(rule.Type)
-            this.listRuleView.Insert(newIndex, , , rule.TypeName, rule.Description)
+            this.lvRule.Insert(newIndex, , , rule.TypeName, rule.Description)
 
             ; 保持选中状态
-            this.listRuleView.Modify(newIndex, "+Select")
+            this.lvRule.Modify(newIndex, "+Select")
             ; 判断是否有Checked状态
             if (listCheckedIndex.IndexOf(index)) {
-                this.listRuleView.Modify(newIndex, "+Check")
+                this.lvRule.Modify(newIndex, "+Check")
             }
         }
         ; 重新设置索引
-        loop this.listRuleView.GetCount() {
-            this.listRuleView.Modify(A_Index, , A_Index)
+        loop this.lvRule.GetCount() {
+            this.lvRule.Modify(A_Index, , A_Index)
         }
 
         ; 更新两个ListView
-        this.Update(true)
+        this.UpdateAllListView(true)
     }
 
     /**
@@ -481,8 +495,8 @@ class BatchReName {
         if (this.rules.Length > 0) {
             this.rules.RemoveAt(1, this.rules.Length)
         }
-        this.listRuleView.Delete()
-        this.Update(true)
+        this.lvRule.Delete()
+        this.UpdateAllListView(true)
 
         ; 禁用 “保存” “另存为” 按钮
         this.btnSavePreset.Opt("+Disabled")
@@ -620,7 +634,7 @@ class BatchReName {
             return this.listPreset.Text
         }
         set {
-            ; 加载预设
+            ;* 加载预设
             if (IsSet(Value) && Value) {
                 ; Console.Debug("加载预设：" Value)
                 path := this.presetDir "\" Value ".json"
@@ -650,7 +664,7 @@ class BatchReName {
                     for (index, rawRule in rawRules) {
                         ; Console.Debug("规则类型：" Type(rawRule), rawRule)
                         rule := RenameRule.%rawRule.Get("Type") "Rule"%(rawRule)
-                        this.AddRule(rule)
+                        this.AddRule(rule, rule.Enable)
                     }
                     this.listPreset.Choose(Value)
                     ; 成功加载预设后允许使用 另存为，重命名、删除 等按钮
@@ -774,9 +788,9 @@ class BatchReName {
 
     ;*更新规则ListView
     UpdateRuleListView() {
-        this.listRuleView.ModifyCol(1, 'AutoHdr')
-        this.listRuleView.ModifyCol(2, 'AutoHdr')
-        this.listRuleView.ModifyCol(3, 'AutoHdr')
+        this.lvRule.ModifyCol(1, 'AutoHdr')
+        this.lvRule.ModifyCol(2, 'AutoHdr')
+        this.lvRule.ModifyCol(3, 'AutoHdr')
     }
 
     /**
@@ -786,7 +800,9 @@ class BatchReName {
      */
     OnListRuleViewItemCheck(index, isChecked) {
         ; Console.Debug("行号：" index ",勾选状态：" isChecked)
-        this.Update(true)
+        this.rules[index].Enable := isChecked
+        this.lvRuleColor.Row(index, , isChecked ? 0x009900 : 0)
+        this.UpdateAllListView(true)
     }
 
     /**
@@ -935,6 +951,9 @@ class BatchReName {
      */
     OnDropFiles(GuiCtrlObj, FileArray, X, Y) {
         ; Console.Debug("拖拽文件：", FileArray)
+
+        this.lvFile.Opt("-Redraw")
+
         for (path in FileArray) {
             file := ReNameFile(path)
 
@@ -995,31 +1014,25 @@ class BatchReName {
             }
         }
 
+        ;* 按照路径逻辑排序(首次排序)
+        this.lvFile.ModifyCol(4, 'Logical Sort')
+        this.SortFilesByListFileView()
         ;* 最后刷新ListView 同时重新计算重命名结果
-        this.Update(true)
-        this.UpdateFileListView(true)
+        this.UpdateAllListView(true)
     }
 
-    /**
-     * *加载文件到ListView
-     */
-    LoadFile() {
-        for (file in this.files) {
-            this.AddFileToListView(file)
-        }
-    }
 
     ;* 移除所选文件
     RemoveSelectedFile(*) {
-        listIndex := this.GetListViewIndexList(this.listFileView, , true)
+        listIndex := this.GetListViewIndexList(this.lvFile, , true)
 
         for (index in listIndex) {
             this.files.RemoveAt(index)
-            this.listFileView.Delete(index)
+            this.lvFile.Delete(index)
         }
 
         ; 更新两个ListView
-        this.Update(true)
+        this.UpdateAllListView(true)
     }
 
     /**
@@ -1028,8 +1041,8 @@ class BatchReName {
      */
     AddFileToListView(file) {
         ; Console.Debug(file.NewPath)
-        index := this.listFileView.Add(, "✔", file.Name, file.Name, file.Path)
-        this.listFileView.Modify(index, "+Check")
+        index := this.lvFile.Add(, "✔", file.Name, file.Name, file.Path)
+        this.lvFile.Modify(index, "+Check")
     }
 
     ;! 清空文件列表
@@ -1039,7 +1052,7 @@ class BatchReName {
             this.files.RemoveAt(1, this.files.Length)
         }
         ; 再清空ListView
-        this.listFileView.Delete()
+        this.lvFile.Delete()
         ; 文件清空后就不需要更新ListView了
         ; 但需要更新状态栏
         this.UpdateStateBar()
@@ -1062,7 +1075,7 @@ class BatchReName {
      * @param {Integer} sortByPath 是否按照路径列排序
      */
     UpdateFileListView(sortByPath := false) {
-        lv := this.listFileView
+        lv := this.lvFile
         lv.ModifyCol(1, "AutoHdr")
         lv.ModifyCol(2, "AutoHdr")
         lv.ModifyCol(3, "AutoHdr")
@@ -1083,16 +1096,19 @@ class BatchReName {
      * * 更新两个ListView (可选计算重命名结果)
      * @param updateResult 是否更新重命名结果
      */
-    Update(updateResult := false) {
-
+    UpdateAllListView(updateResult := false) {
         if (updateResult) {
+            this.lvFile.Opt("-Redraw")
             ; 计算重命名预览结果
             this.CalcRenamePreview()
+            this.lvFile.Redraw()
         }
 
         ; 更新ListView
         this.UpdateRuleListView()
         this.UpdateFileListView()
+        this.lvFile.Opt("+Redraw")
+        this.lvFile.Redraw()
 
         ; 更新状态栏
         this.UpdateStateBar()
@@ -1113,7 +1129,7 @@ class BatchReName {
     OnListFileViewItemCheck(index, isChecked) {
         ; Console.Debug("行号：" index ",勾选状态：" isChecked)
         this.files[index].Enable := isChecked
-        this.Update()
+        this.UpdateAllListView()
     }
 
     /**
@@ -1134,9 +1150,9 @@ class BatchReName {
         /** @type {Array<ReNameFile>} */
         newFiles := []
         ; 根据ListFileView展示的数据对this.files进行排序
-        loop this.listFileView.GetCount() {
+        loop this.lvFile.GetCount() {
             ;todo 从路径列获取路径（当前第4例是Path路径列）
-            path := this.listFileView.GetText(A_Index, 4)
+            path := this.lvFile.GetText(A_Index, 4)
             ; 找到对应的file在this.files中的位置
             index := this.files.Find((f) => f.Path == path)
             file := this.files[index]
@@ -1155,7 +1171,7 @@ class BatchReName {
     ;! 计算重命名预览结果
     CalcRenamePreview() {
         ; 获取已经勾选的规则列表
-        checkedRuleIndexList := this.GetListViewIndexList(this.listRuleView, "C")
+        checkedRuleIndexList := this.GetListViewIndexList(this.lvRule, "C")
         ; Console.Debug("当前勾选的规则下标：", checkedRuleIndexList)
         checkedRules := []
         ; 只获取已勾选的规则列表
@@ -1169,28 +1185,35 @@ class BatchReName {
             loop this.files.Length {
                 file := this.files[A_Index]
                 file.InitInfo()
-                this.listFileView.Modify(A_Index, '', , , file.NewName)
+                this.lvFile.Modify(A_Index, '', , , file.NewName)
             }
+            ; 然后重新冲突检测
+            this.CheckConflict()
             return
         }
+
         ; 初始化NewName
         loop this.files.Length {
             file := this.files[A_Index]
             file.InitInfo()
         }
+
         ; 依次执行规则
         loop checkedRules.Length {
             rule := checkedRules[A_Index]
             ReName.%rule.Type%(this.files, rule)
         }
+
         ;! 进行冲突检测
         this.CheckConflict()
+
         ; 最后更新视图
         loop this.files.Length {
             file := this.files[A_Index]
-            this.listFileView.Modify(A_Index, '', , , file.NewName)
+            this.lvFile.Modify(A_Index, '', , , file.NewName)
         }
     }
+
 
     /**
      * * 冲突检测
@@ -1199,46 +1222,59 @@ class BatchReName {
         isConflict := false
         /** @type {Array<ReNameFile>} 记录即将要修改文件夹项目 */
         folderItemList := []
-
+        ; 先清除原先的单元格样式
         loop this.files.Length {
             /** @type {ReNameFile} */
             file := this.files[A_Index]
 
-            ; 跳过未修改的文件
-            if (file.Path == file.NewPath) {
-                this.listFileView.Modify(A_Index, , "✔")
+            ;* 跳过未被勾选（启用）的项目
+            if (!file.Enable) {
+                this.lvFile.Modify(A_Index, , "⏸")
+                this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
                 continue
             }
 
-            ; 如果待修改文件路径不存则跳过
-            if (!file.PathExist) {
-                this.listFileView.Modify(A_Index, , "❓")
+            ;* 跳过未修改的文件
+            if (file.Path == file.NewPath) {
+                this.lvFile.Modify(A_Index, , "✔")
+                this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
                 continue
             }
+
+            ;* 如果待修改文件路径不存则跳过
+            if (!file.PathExist) {
+                this.lvFile.Modify(A_Index, , "❓")
+                this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
+                continue
+            }
+
 
             ;! 判断在修改该项目之前是否会修改其所在目录
-            indexDir := folderItemList.Find(f => f.Path == file.Dir)
+            indexDir := folderItemList.Find(f => InStr(file.Path, f.Path))
             if (indexDir > 0) {
                 ; 如果发现前面记录的文件夹列表中存在当前项目所在目录则标记为冲突
-                this.listFileView.Modify(A_Index, , "❗")
+                this.lvFile.Modify(A_Index, , "❗")
+                this.lvFileColor.Cell(A_Index, 3, , 0xff0000) ; 设置为冲突色
                 ; 标记为冲突
-                isConflict := true
+                isConflict := isConflict ? isConflict : true
                 ; 也就无需后续判断
                 continue
             }
 
-            ;? 如果当前项目是文件夹则记录下来
+            ;? 如果当前项目是文件夹则记录下来(留作后续冲突判断)
             if (file.IsDirectory) {
                 folderItemList.Push(file)
             }
 
             ; 判断文件是否存在
             ; * file.NewPathExist == true 则说文件存在即冲突
-            this.listFileView.Modify(A_Index, , file.NewPathExist ? "❗" : "✔")
-            ; 标记判断
-            isConflict := file.NewPathExist
+            this.lvFile.Modify(A_Index, , file.NewPathExist ? "❗" : "✔")
+            this.lvFileColor.Cell(A_Index, 3, , file.NewPathExist ? 0xff0000 : 0x009900)
 
+            ; 标记判断
+            isConflict := isConflict ? isConflict : file.NewPathExist
         }
+
         if (isConflict) {
             ; 冲突时禁用重命名应用按钮
             this.btnApply.Opt('+Disabled')
@@ -1257,16 +1293,33 @@ class BatchReName {
         }
         successCount := 0
         notExistCount := 0
+        NoNeedRenameCount := 0
+        UnenableCount := 0
+        this.lvFile.Opt("-Redraw")
+
         for (index, fileItem in this.files) {
-            ;* 跳过冲突项 NewPathExist==true 说明冲突
-            if (fileItem.NewPathExist) {
+            ;* 跳过未被勾选（启用）的项目
+            if (!fileItem.Enable) {
+                UnenableCount++
                 continue
             }
+
             ;* 跳过路径不存在的项
             if (!fileItem.PathExist) {
                 notExistCount++
                 continue
             }
+            ;* 跳过无需重命名的项
+            if (fileItem.NewName == fileItem.Name) {
+                NoNeedRenameCount++
+                successCount++
+                continue
+            }
+            ;* 跳过冲突项 NewPathExist==true 说明冲突
+            if (fileItem.NewPathExist) {
+                continue
+            }
+
 
             try {
                 if (fileItem.IsDirectory) {
@@ -1276,7 +1329,7 @@ class BatchReName {
                     if (DirExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
                         fileItem.__New(fileItem.NewPath)
-                        this.listFileView.Modify(index, , , fileItem.Name, fileItem.NewName, fileItem.Path)
+                        this.lvFile.Modify(index, , , fileItem.Name, fileItem.NewName, fileItem.Path)
                     }
                 } else {
                     ; 对文件的重命名
@@ -1286,7 +1339,7 @@ class BatchReName {
                     if (FileExist(fileItem.NewPath)) {
                         ; 成功后重新调用__New方法
                         fileItem.__New(fileItem.NewPath)
-                        this.listFileView.Modify(index, , , fileItem.Name, fileItem.NewName, fileItem.Path)
+                        this.lvFile.Modify(index, , , fileItem.Name, fileItem.NewName, fileItem.Path)
                     }
                 }
                 ; 成功后成功计数++
@@ -1296,14 +1349,29 @@ class BatchReName {
             }
 
         }
-        ; 完成后刷新两视图
-        this.UpdateFileListView()
 
-        if (notExistCount) {
-            MsgBox("✔重命名成功！（成功重命名 " successCount "/" this.files.Length " 项，未找到路径 " notExistCount " 项目）", "提示", "Owner" this.gui.Hwnd)
-        } else {
-            MsgBox("✔重命名成功！（成功重命名 " successCount "/" this.files.Length " 项）", "提示", "Owner" this.gui.Hwnd)
+        ; 完成后刷新两视图
+        this.UpdateAllListView(true)
+
+        title := "✔重命名成功！"
+        msg := "操作成功 " successCount " / " this.files.Length " 项"
+        minorMsgList := Array()
+        if (UnenableCount) {
+            minorMsgList.Push("有 " UnenableCount " 项未勾选")
         }
+        if (NoNeedRenameCount) {
+            minorMsgList.Push("有 " NoNeedRenameCount " 项无需重命名")
+        }
+        if (notExistCount) {
+            minorMsgList.Push("有 " notExistCount " 项找不到路径")
+        }
+        minorMsg := ""
+        if (minorMsgList.Length) {
+            minorMsg := "（其中：" minorMsgList.Join("，") "）"
+            msg .= minorMsg
+        }
+
+        MsgBox(msg, title, "Owner" this.gui.Hwnd)
     }
 
     ; 显示窗口
@@ -1324,7 +1392,6 @@ class BatchReName {
             this.gui.Show("w800")
             ; 注册文件拖拽到窗口的事件
             this.RegisterDropFileEvent()
-
         } else {
             ; 并且激活窗口
             WinActivate("ahk_id" this.gui.Hwnd)
@@ -1336,18 +1403,20 @@ class BatchReName {
         ; 如果选中的文件列表数量>0则重新载入文件
         if (renameFiles.Length > 0) {
             ; 若窗口已经存又再次触发则清空类别重新添加
+            this.lvFile.Opt("-Redraw")
             this.ClearFile()
             for (file in renameFiles) {
                 this.files.Push(file)
                 this.AddFileToListView(file)
             }
 
-            ;* 刷新ListView 同时重算重命名结果
-            this.Update(true)
             ;* 按照路径逻辑排序(首次排序)
-            this.listFileView.ModifyCol(4, 'Logical Sort')
+            this.lvFile.ModifyCol(4, 'Logical Sort')
             ; 根据 `ListFileView` 排序 `this.files` 数组
             this.SortFilesByListFileView()
+
+            ;* 刷新ListView 同时重算重命名结果
+            this.UpdateAllListView(true)
         }
 
         ;* 更新状态栏
@@ -1385,6 +1454,8 @@ class BatchReName {
     ; 类的析构函数/清理函数
     __Delete() {
         this.RuleEdit := ""
+        this.lvRuleColor.OnMessage(false)
+        this.lvFileColor.OnMessage(false)
         this.gui.Destroy()
         this.gui := ""
     }
@@ -1643,6 +1714,7 @@ class UIRuleEdit {
         ;* 添加窗口事件
         this.gui.OnEvent('Size', (guiObj, MinMax, wWidth, wHeight) => this.OnWindowResize(guiObj, MinMax, wWidth, wHeight))
         this.gui.OnEvent("Close", (*) => this.Close())
+        this.gui.OnEvent("Escape", (*) => this.Close())
     }
 
     /**
@@ -1905,7 +1977,7 @@ class UIRuleEdit {
                 this.Ctl_Remove_IgnoreCase.Value := rule.IgnoreCase
                 this.Ctl_Remove_IgnoreExt.Value := rule.IgnoreExt
             case "Serialize":
-                this.%"Ctl_Serialize_Position_" rule.Position% := 1
+                this.%"Ctl_Serialize_Position_" rule.Position%.Value := 1
                 this.Ctl_Serialize_IgnoreCase.Value := rule.IgnoreCase
                 this.Ctl_Serialize_IgnoreExt.Value := rule.IgnoreExt
                 this.Ctl_Serialize_Position_Index_AnchorIndex.Value := rule.AnchorIndex
@@ -1923,7 +1995,7 @@ class UIRuleEdit {
                 this.Ctl_Fill_TextPadding_Enable := rule.TextPadding.Enable
                 this.Ctl_Fill_TextPadding_Character := rule.TextPadding.Character
                 this.Ctl_Fill_TextPadding_Length := rule.TextPadding.Length
-                this.%"Ctl_Fill_TextPadding_Direction_" rule.TextPadding.Direction% := 1
+                this.%"Ctl_Fill_TextPadding_Direction_" rule.TextPadding.Direction%.Value := 1
                 this.Ctl_Fill_IgnoreExt.Value := rule.IgnoreExt
             case "Regex":
                 Console.Debug(rule)
@@ -2053,9 +2125,19 @@ class UIRuleEdit {
 class RenameRule {
     ; 基础规则类
     class BaseRule {
+        ; 是否启用规则
+        Enable := true
         Type := ""
         /** 忽略扩展名 */
         IgnoreExt := true
+
+        /**
+         * 
+         * @param {Map<RenameRule.BaseRule>} rawRule 
+         */
+        __New(rawRule?) {
+            this.Enable := rawRule.Get("Enable", true)
+        }
 
         ; 获取规则名
         TypeName {
@@ -2097,8 +2179,8 @@ class RenameRule {
          * @param {Map<RenameRule.InsertRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
          */
         __New(rawRule?) {
-
             if (IsSet(rawRule)) {
+                super.__New(rawRule)
                 this.Content := rawRule.Get("Content", "")
                 this.Position := rawRule.Get("Position", "Preset")
                 this.AnchorIndex := rawRule.Get("AnchorIndex", 1)
@@ -2171,8 +2253,8 @@ class RenameRule {
          * @param {Map<RenameRule.ReplaceRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
          */
         __New(rawRule?) {
-
             if (IsSet(rawRule)) {
+                super.__New(rawRule)
                 this.Match := rawRule.Get("Match", "")
                 this.ReplaceTo := rawRule.Get("ReplaceTo", "")
                 this.Range := rawRule.Get("Range", "All")
@@ -2227,6 +2309,7 @@ class RenameRule {
         __New(rawRule?) {
 
             if (IsSet(rawRule)) {
+                super.__New(rawRule)
                 this.Match := rawRule.Get("Match", "")
                 this.Range := rawRule.Get("Range", "All")
                 this.IgnoreCase := rawRule.Get("IgnoreCase", false)
@@ -2291,8 +2374,8 @@ class RenameRule {
          * @param {Map<RenameRule.SerializeRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
          */
         __New(rawRule?) {
-
             if (IsSet(rawRule)) {
+                super.__New(rawRule)
                 this.Position := rawRule.Get("Position", "Prefix")
                 this.AnchorIndex := rawRule.Get("AnchorIndex", 1)
                 this.ReverseIndex := rawRule.Get("ReverseIndex", false)
@@ -2388,8 +2471,8 @@ class RenameRule {
          * @param {Map<RenameRule.FillRule>} rawRule 原始Rule对象，需要从Map对象解析成Rule对象的时候才需要传入
          */
         __New(rawRule?) {
-
             if (IsSet(rawRule)) {
+                super.__New(rawRule)
                 ZeroPadding := rawRule.Get("ZeroPadding", { Enable: false, Length: 3 })
                 this.ZeroPadding.Enable := ZeroPadding.Get("ZeroPadding", false)
                 this.ZeroPadding.Length := ZeroPadding.Get("Length", 3)
@@ -2456,6 +2539,7 @@ class RenameRule {
          */
         __New(rawRule?) {
             if (IsSet(rawRule)) {
+                super.__New(rawRule)
                 this.Regex := rawRule.Get("Regex", "")
                 this.ReplaceTo := rawRule.Get("ReplaceTo", "")
                 this.IgnoreCase := rawRule.Get("IgnoreCase", false)
@@ -2495,6 +2579,7 @@ class RenameRule {
          */
         __New(rawRule?) {
             if (IsSet(rawRule)) {
+                super.__New(rawRule)
                 this.NewExt := rawRule.Get("NewExt", "")
                 this.IgnoreExt := rawRule.Get("IgnoreExt", false)
             }
@@ -2915,7 +3000,7 @@ class ReName {
             ;* 补零填充和移除补零
             {
                 if (rule.RemoveZeroPadding) {
-                    test := StringUtils.RemoveZeroPaddingString(test)
+                    test := StringUtils.RemoveZeroPadding(test)
                 } else if (rule.ZeroPadding.Enable) {
                     test := StringUtils.ZeroPadding(test, rule.ZeroPadding.Length)
                 }
