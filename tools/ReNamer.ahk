@@ -342,7 +342,7 @@ class BatchReName {
         this.UpdateAllListView(true)
         ; 取消对 `保存规则` 按钮的禁用
         this.btnSavePreset.Opt("-Disabled")
-        ; this.btnSaveAsPreset.Opt("-Disabled")
+        this.btnSaveAsPreset.Opt("-Disabled")
     }
 
     /**
@@ -606,20 +606,34 @@ class BatchReName {
 
     ;* 加载预设名称列表
     ReloadPresetNameList() {
-        dir := this.presetDir
-        list := []
+        newList := this.presetNameList
         ; 重载前先记录当前选择的预设名称
         oldPresetName := this.nowPresetName
-        loop files dir "\*.json", "F" {
-            SplitPath(A_LoopFileFullPath, , , , &presetName)
-            list.Push(presetName)
-        }
+
         this.listPreset.Delete()
-        this.listPreset.Add(list)
+        this.listPreset.Add(newList)
 
         ; 重载结束后还原当前所选的预设名称 (如果不为空且存在的话)
         if (oldPresetName && FileExist(this.presetDir "\" oldPresetName ".json")) {
-            this.listPreset.Choose(oldPresetName)
+            ; 找到对应索引
+            index := newList.IndexOf(oldPresetName)
+            this.listPreset.Choose(index)
+        }
+    }
+
+    /**
+     * ? 预设名列表
+     * @type {Array<String>} 
+     */
+    presetNameList {
+        get {
+            dir := this.presetDir
+            list := []
+            loop files dir "\*.json", "F" {
+                SplitPath(A_LoopFileFullPath, , , , &presetName)
+                list.Push(presetName)
+            }
+            return list
         }
     }
 
@@ -666,7 +680,9 @@ class BatchReName {
                         rule := RenameRule.%rawRule.Get("Type") "Rule"%(rawRule)
                         this.AddRule(rule, rule.Enable)
                     }
-                    this.listPreset.Choose(Value)
+                    ; 找到对应索引
+                    index := this.presetNameList.IndexOf(Value)
+                    this.listPreset.Choose(index)
                     ; 成功加载预设后允许使用 另存为，重命名、删除 等按钮
                     this.btnDeletePreset.Opt("-Disabled")
                     this.btnReNamePreset.Opt("-Disabled")
@@ -1101,14 +1117,13 @@ class BatchReName {
             this.lvFile.Opt("-Redraw")
             ; 计算重命名预览结果
             this.CalcRenamePreview()
-            this.lvFile.Redraw()
         }
 
         ; 更新ListView
         this.UpdateRuleListView()
         this.UpdateFileListView()
+
         this.lvFile.Opt("+Redraw")
-        this.lvFile.Redraw()
 
         ; 更新状态栏
         this.UpdateStateBar()
@@ -1219,32 +1234,40 @@ class BatchReName {
      * * 冲突检测
      */
     CheckConflict() {
-        isConflict := false
         /** @type {Array<ReNameFile>} 记录即将要修改文件夹项目 */
         folderItemList := []
+
+        notExistCount := 0 ; 文件不存在数量
+        UnenableCount := 0 ; 未勾选数量
+        NoNeedRenameCount := 0 ; 无需重命名数量
+        conflictCount := 0 ; 冲突数量
+
         ; 先清除原先的单元格样式
         loop this.files.Length {
             /** @type {ReNameFile} */
             file := this.files[A_Index]
 
-            ;* 跳过未被勾选（启用）的项目
-            if (!file.Enable) {
-                this.lvFile.Modify(A_Index, , "⏸")
-                this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
-                continue
-            }
-
-            ;* 跳过未修改的文件
-            if (file.Path == file.NewPath) {
-                this.lvFile.Modify(A_Index, , "✔")
-                this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
-                continue
-            }
-
             ;* 如果待修改文件路径不存则跳过
             if (!file.PathExist) {
                 this.lvFile.Modify(A_Index, , "❓")
                 this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
+                notExistCount++
+                continue
+            }
+
+            ;* 跳过无需修改的文件
+            if (file.Path == file.NewPath) {
+                this.lvFile.Modify(A_Index, , "✔")
+                this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
+                NoNeedRenameCount++
+                continue
+            }
+
+            ;* 跳过未被勾选（启用）的项目
+            if (!file.Enable) {
+                this.lvFile.Modify(A_Index, , "⏸")
+                this.lvFileColor.Cell(A_Index, 3, ,) ; 清除颜色
+                UnenableCount++
                 continue
             }
 
@@ -1255,8 +1278,8 @@ class BatchReName {
                 ; 如果发现前面记录的文件夹列表中存在当前项目所在目录则标记为冲突
                 this.lvFile.Modify(A_Index, , "❗")
                 this.lvFileColor.Cell(A_Index, 3, , 0xff0000) ; 设置为冲突色
-                ; 标记为冲突
-                isConflict := isConflict ? isConflict : true
+                ; 冲突记录
+                conflictCount++
                 ; 也就无需后续判断
                 continue
             }
@@ -1266,16 +1289,26 @@ class BatchReName {
                 folderItemList.Push(file)
             }
 
+
             ; 判断文件是否存在
             ; * file.NewPathExist == true 则说文件存在即冲突
             this.lvFile.Modify(A_Index, , file.NewPathExist ? "❗" : "✔")
             this.lvFileColor.Cell(A_Index, 3, , file.NewPathExist ? 0xff0000 : 0x009900)
 
-            ; 标记判断
-            isConflict := isConflict ? isConflict : file.NewPathExist
+            ; 冲突判断并记录
+            if (file.NewPathExist) {
+                conflictCount++
+            }
         }
 
-        if (isConflict) {
+        ; 如果不需要修改项数等于所有文件项数，就应用应用按钮
+        if (NoNeedRenameCount == this.files.Length) {
+            this.btnApply.Opt('+Disabled')
+            return
+        }
+
+        ; 只要存在文件找不到、或冲突的情况就禁用应用按钮
+        if (conflictCount || notExistCount) {
             ; 冲突时禁用重命名应用按钮
             this.btnApply.Opt('+Disabled')
         } else {
@@ -1298,25 +1331,38 @@ class BatchReName {
         this.lvFile.Opt("-Redraw")
 
         for (index, fileItem in this.files) {
+            continueFlag := false
+
             ;* 跳过未被勾选（启用）的项目
             if (!fileItem.Enable) {
                 UnenableCount++
-                continue
+                continueFlag := true
+                ; continue
             }
 
             ;* 跳过路径不存在的项
             if (!fileItem.PathExist) {
                 notExistCount++
-                continue
+                continueFlag := true
+                ; continue
             }
+
             ;* 跳过无需重命名的项
             if (fileItem.NewName == fileItem.Name) {
                 NoNeedRenameCount++
                 successCount++
-                continue
+                continueFlag := true
+                ; continue
             }
+
             ;* 跳过冲突项 NewPathExist==true 说明冲突
             if (fileItem.NewPathExist) {
+                continueFlag := true
+                ; continue
+            }
+
+            ;? 通过 continueFlag 判断是否跳过
+            if (continueFlag) {
                 continue
             }
 
