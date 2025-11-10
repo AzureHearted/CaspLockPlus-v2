@@ -41,14 +41,24 @@ funcLogic_capsHold() {
                 ; Console.Debug(bindingKeys.Length)
                 ; 清空原本展示的内容
                 UISets.hotTips.ClearTips()
-                tipsMsg := ''
+                ; tipsMsg := ''
                 ; 添加新的内容
                 for (key in bindingKeys) {
                     ahk_exe := IniRead('winsInfosRecorder.ini', key, 'ahk_exe', '未知程序名')
                     path := IniRead('winsInfosRecorder.ini', key, 'path', '')
-                    tipsMsg .= key ":`t" ahk_exe "`n"
+                    ; tipsMsg .= key ":`t" ahk_exe "`n"
+                    oldTitle := IniRead('winsInfosRecorder.ini', key, 'ahk_title', '')
+                    title := oldTitle
+                    try {
+                        hwnd := WinExist(oldTitle " ahk_exe" ahk_exe)
+                        if (hwnd) {
+                            title := WinGetTitle("ahk_id" hwnd)
+                        }
+                    }
+                    if (!title)
+                        title := oldTitle
+                    ; 加载程序图标
                     iconNumber := UISets.hotTips.LoadIcon(path)
-                    title := IniRead('winsInfosRecorder.ini', key, 'ahk_title', '')
                     UISets.hotTips.AddTipItem(iconNumber, title, ahk_exe, key)
                 }
                 ; Console.Debug(tipsMsg)

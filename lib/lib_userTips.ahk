@@ -14,8 +14,10 @@ class UserTips extends UITips {
     super.__New('已绑定的窗口')
     defColumns := ["标题", "进程", "按键"]
 
+    this.gui.SetFont("s12")
     ; tip内容
-    this.listView := this.gui.AddListView("xm r8 ReadOnly NoSort NoSortHdr -E0x200 ", defColumns)
+    this.listView := this.gui.AddListView("xm r8 ReadOnly NoSort NoSortHdr -E0x200 w" A_ScreenWidth * 0.2, defColumns)
+    ; this.listView.SetFont("s12")
 
     ; 创建图像列表, 这样 ListView 才可以显示图标:
     this.ImageListID := IL_Create(10)
@@ -53,9 +55,11 @@ class UserTips extends UITips {
     lv.ModifyCol(3, 'AutoHdr Logical Sort')
 
 
+    totalWidth := this.GetListViewColumnWidth(lv, 1) + this.GetListViewColumnWidth(lv, 2) + this.GetListViewColumnWidth(lv, 3)
+    this.gui.GetClientPos(, , &wGui)
     ; 限制2、3列自动宽度不超过180
-    if (this.GetListViewColumnWidth(lv, 1) > 180) {
-      lv.ModifyCol(1, 180)
+    if (totalWidth > wGui - this.gui.MarginX * 2) {
+      lv.ModifyCol(1, (wGui - this.gui.MarginX * 2) - (this.GetListViewColumnWidth(lv, 2) + this.GetListViewColumnWidth(lv, 3)))
     }
   }
 
