@@ -42,7 +42,6 @@ funcLogic_capsHold() {
                 ; 清空原本展示的内容
                 UISets.hotTips.ClearTips()
                 ; tipsMsg := ''
-                ; tipsMsg := ''
                 ; 添加新的内容
                 for (key in bindingKeys) {
                     ahk_exe := IniRead('winsInfosRecorder.ini', key, 'ahk_exe', '未知程序名')
