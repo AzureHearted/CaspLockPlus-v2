@@ -1581,15 +1581,15 @@ class UIRuleEdit {
             ; "位置" 相关附属
             this.Ctl_Insert_Position_Index_AnchorIndex_Edit := this.gui.AddEdit("x" 170 " y" 190 " w60  Section")
             this.Ctl_Insert_Position_Index_AnchorIndex := this.gui.AddUpDown("Range1-2147483647 vInsert_Position_Index_AnchorIndex", 1)
-            this.Ctl_Insert_Position_Index_AnchorIndex.OnEvent('Change', (*) => this.Ctl_Insert_Position_Index.Value := true)
+            this.Ctl_Insert_Position_Index_AnchorIndex.OnEvent('Change', (*) => (this.Ctl_Insert_Position_Index.Value := true))
             this.Ctl_Insert_Position_Index_ReverseIndex := this.gui.AddCheckbox("x+m" " yp" " hp w80 vInsert_Position_Index_ReverseIndex", "从右到左")
-            this.Ctl_Insert_Position_Index_ReverseIndex.OnEvent("Click", (*) => this.Ctl_Insert_Position_Index_ReverseIndex.Value ? this.Ctl_Insert_Position_Index.Value := true : "")
+            this.Ctl_Insert_Position_Index_ReverseIndex.OnEvent("Click", (*) => (this.Ctl_Insert_Position_Index_ReverseIndex.Value ? (this.Ctl_Insert_Position_Index.Value := true) : ""))
             ; "到文本前" 相关附属
             this.Ctl_Insert_Position_Before_AnchorText := this.gui.AddEdit("xs y+" 3 "  w200 vInsert_Position_Before_AnchorText")
-            this.Ctl_Insert_Position_Before_AnchorText.OnEvent("Change", (*) => this.Ctl_Insert_Position_Before.Value := true)
+            this.Ctl_Insert_Position_Before_AnchorText.OnEvent("Change", (*) => (this.Ctl_Insert_Position_Before.Value := true))
             ; "到文本后" 相关附属
             this.Ctl_Insert_Position_After_AnchorText := this.gui.AddEdit("xp y+" 3 "  w200 vInsert_Position_After_AnchorText")
-            this.Ctl_Insert_Position_After_AnchorText.OnEvent("Change", (*) => this.Ctl_Insert_Position_After.Value := true)
+            this.Ctl_Insert_Position_After_AnchorText.OnEvent("Change", (*) => (this.Ctl_Insert_Position_After.Value := true))
         }
 
         ;? 替换
@@ -1655,15 +1655,15 @@ class UIRuleEdit {
             ; 位置相关附属
             this.gui.AddEdit("x" 100 " y" 154 " w60 Section")
             this.Ctl_Serialize_Position_Index_AnchorIndex := this.gui.AddUpDown("Range1-2147483647 vSerialize_Position_Index_AnchorIndex", 1)
-            this.Ctl_Serialize_Position_Index_AnchorIndex.OnEvent('Change', (*) => this.Ctl_Serialize_Position_Index.Value := true)
+            this.Ctl_Serialize_Position_Index_AnchorIndex.OnEvent('Change', (*) => (this.Ctl_Serialize_Position_Index.Value := true))
             this.Ctl_Serialize_Position_Index_ReverseIndex := this.gui.AddCheckbox("x+m" " yp" " hp w80 vSerialize_Position_Index_ReverseIndex", "从右到左")
-            this.Ctl_Serialize_Position_Index_ReverseIndex.OnEvent("Click", (*) => this.Ctl_Serialize_Position_Index_ReverseIndex.Value ? this.Ctl_Serialize_Position_Index.Value := true : "")
+            this.Ctl_Serialize_Position_Index_ReverseIndex.OnEvent("Click", (*) => (this.Ctl_Serialize_Position_Index_ReverseIndex.Value ? (this.Ctl_Serialize_Position_Index.Value := true) : ""))
             ; "到文本前" 相关附属
             this.Ctl_Serialize_Position_Before_AnchorText := this.gui.AddEdit("xs" 23 " y+" 3 " w120 vSerialize_Position_Before_AnchorText")
-            this.Ctl_Serialize_Position_Before_AnchorText.OnEvent("Change", (*) => this.Ctl_Serialize_Position_Before.Value := true)
+            this.Ctl_Serialize_Position_Before_AnchorText.OnEvent("Change", (*) => (this.Ctl_Serialize_Position_Before.Value := true))
             ; "到文本后" 相关附属
             this.Ctl_Serialize_Position_After_AnchorText := this.gui.AddEdit("xp y+" 3 " w120 vSerialize_Position_After_AnchorText")
-            this.Ctl_Serialize_Position_After_AnchorText.OnEvent("Change", (*) => this.Ctl_Serialize_Position_After.Value := true)
+            this.Ctl_Serialize_Position_After_AnchorText.OnEvent("Change", (*) => (this.Ctl_Serialize_Position_After.Value := true))
 
             ; 序列设置
             this.gui.AddGroupBox("x" 270 " y" 64 " r12 w170", '序列位置：')
@@ -1699,8 +1699,8 @@ class UIRuleEdit {
 
             this.Ctl_Fill_RemoveZeroPadding := this.gui.AddCheckbox("xs y+m vFill_RemoveZeroPadding", "移除补零")
 
-            this.Ctl_Fill_ZeroPadding_Enable.OnEvent("Click", (*) => this.Ctl_Fill_ZeroPadding_Enable.Value ? this.Ctl_Fill_RemoveZeroPadding.Value := false : "")
-            this.Ctl_Fill_RemoveZeroPadding.OnEvent("Click", (*) => this.Ctl_Fill_RemoveZeroPadding.Value ? this.Ctl_Fill_ZeroPadding_Enable.Value := false : "")
+            this.Ctl_Fill_ZeroPadding_Enable.OnEvent("Click", (*) => (this.Ctl_Fill_ZeroPadding_Enable.Value ? (this.Ctl_Fill_RemoveZeroPadding.Value := false) : ""))
+            this.Ctl_Fill_RemoveZeroPadding.OnEvent("Click", (*) => (this.Ctl_Fill_RemoveZeroPadding.Value ? (this.Ctl_Fill_ZeroPadding_Enable.Value := false) : ""))
 
             this.gui.AddGroupBox("xs-" 15 " y+m" 24 " r6 w" this.tabWidth, '文本填充：')
 
